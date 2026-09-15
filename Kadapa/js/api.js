@@ -111,6 +111,7 @@ function normalizeComplaintRow(row) {
     } : null,
     estimatedResolutionTime: row.estimated_resolution_time,
     photoUrl: row.photo_url,
+    audioUrl: row.audio_url || null,
     resolutionProof: row.resolution_proof,
     timeline: (row.complaint_timeline || []).map(t => ({
       step: t.step,
@@ -161,8 +162,29 @@ export const api = {
 
         const { data, error } = await query;
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           let complaints = data.map(row => normalizeComplaintRow(row));
+
+          // Merge local state complaints and upvotes so local toggles/tickets are never wiped out
+          const localComplaints = stateManager.getComplaints();
+          const remoteIds = new Set(complaints.map(c => c.id).concat(complaints.map(c => c.dbId)));
+          const localOnly = localComplaints.filter(l => !remoteIds.has(l.id) && !remoteIds.has(l.dbId));
+
+          complaints = complaints.map(c => {
+            const local = localComplaints.find(l => l.id === c.id || l.dbId === c.id || l.id === c.dbId);
+            if (local && Array.isArray(local.upvotedBy)) {
+              return {
+                ...c,
+                upvotes: local.upvotes !== undefined ? local.upvotes : c.upvotes,
+                upvotedBy: local.upvotedBy,
+                audioUrl: local.audioUrl || c.audioUrl
+              };
+            }
+            return c;
+          });
+
+          complaints = [...localOnly, ...complaints];
+
           complaints = complaints.map(c => ({
             ...c,
             priorityMetrics: calculatePriorityScore(c)
@@ -283,6 +305,7 @@ export const api = {
             priority: payload.priority || 'Medium',
             submitted_by: currentUser.id,
             photo_url: payload.photoUrl || null,
+            audio_url: payload.audioUrl || null,
             upvotes: 1,
             upvoted_by: [currentUser.id]
           }])
@@ -335,6 +358,7 @@ export const api = {
       updatedAt: new Date().toISOString(),
       assignedTo: null,
       photoUrl: payload.photoUrl || null,
+      audioUrl: payload.audioUrl || null,
       timeline: [
         {
           step: 'Submitted',
@@ -493,13 +517,17 @@ export const api = {
   },
 
   /**
-   * Toggle Upvote in Supabase
+   * Toggle Upvote in StateManager and sync with Supabase
    */
   async upvoteComplaint(complaintId) {
     const currentUser = stateManager.getState().currentUser;
-    const userId = currentUser ? currentUser.id : 'usr_student_1';
+    const userId = (currentUser && currentUser.id) ? currentUser.id : 'usr_student_1';
 
-    if (supabase) {
+    // 1. Immediately toggle in local state manager so UI is instantly responsive and persistent
+    const updated = stateManager.toggleUpvote(complaintId, userId);
+
+    // 2. Best-effort Supabase sync
+    if (supabase && updated) {
       try {
         const { data: ticket } = await supabase
           .from('complaints')
@@ -508,34 +536,16 @@ export const api = {
           .single();
 
         if (ticket) {
-          const list = ticket.upvoted_by || [];
-          const idx = list.indexOf(userId);
-          let newUpvotes = ticket.upvotes || 1;
-          let newList = [...list];
-
-          if (idx > -1) {
-            newList.splice(idx, 1);
-            newUpvotes = Math.max(0, newUpvotes - 1);
-          } else {
-            newList.push(userId);
-            newUpvotes += 1;
-          }
-
           await supabase
             .from('complaints')
-            .update({ upvotes: newUpvotes, upvoted_by: newList })
+            .update({ upvotes: updated.upvotes, upvoted_by: updated.upvotedBy })
             .eq('id', ticket.id);
-
-          return { success: true };
         }
       } catch (err) {
-        console.warn('Supabase upvote error:', err);
+        console.warn('Supabase upvote sync error:', err);
       }
     }
 
-    // Local fallback
-    await delay(100);
-    const updated = stateManager.toggleUpvote(complaintId, userId);
     return { success: true, data: updated };
   },
 

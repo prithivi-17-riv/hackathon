@@ -45,6 +45,8 @@ export function createAdminDashboardView() {
       const totalActive = complaints.filter(c => c.status !== 'Resolved').length;
       const criticalCount = complaints.filter(c => c.priorityMetrics.tier === 'Critical').length;
       const highCount = complaints.filter(c => c.priorityMetrics.tier === 'High').length;
+      const totalTickets = complaints.length;
+      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
 
       return `
         <div class="admin-layout-container">
@@ -53,7 +55,9 @@ export function createAdminDashboardView() {
             <div>
               <div class="sidebar-header">
                 <div class="brand-logo" style="margin-bottom: 8px;">
-                  <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">⚡</div>
+                  <div class="brand-icon" style="width: 32px; height: 32px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                  </div>
                   <span class="brand-title" style="font-size: 1.15rem;">Campus<span>Care</span></span>
                 </div>
                 <div class="sidebar-role-tag">Admin Console</div>
@@ -81,9 +85,9 @@ export function createAdminDashboardView() {
               </ul>
             </div>
 
-            <div style="padding-top: 20px; border-top: 2px solid var(--color-border);">
+            <div style="padding-top: 20px; border-top: 1px solid var(--color-border);">
               <button class="btn btn-outline btn-sm w-full" id="admin-export-pdf-sidebar-btn" style="box-shadow: none;">
-                📥 Export PDF Audit
+                Export PDF Audit
               </button>
             </div>
           </aside>
@@ -99,39 +103,47 @@ export function createAdminDashboardView() {
               </div>
 
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn btn-accent btn-sm" id="admin-export-report-btn">
-                  📄 Export PDF Report
+                <button class="btn btn-primary btn-sm" id="admin-export-report-btn">
+                  Export PDF Report
                 </button>
                 <a href="#/admin/analytics" class="btn btn-secondary btn-sm">
-                  📈 View Recurring Issues
+                  View Recurring Issues
                 </a>
               </div>
             </div>
 
-            <!-- Priority Stats Highlights -->
+            <!-- 4 Priority & Overview Columns (Visible to Admins & Teachers) -->
             <div class="stats-grid" style="margin-bottom: 24px;">
-              <div class="stat-card" style="border-left: 6px solid var(--priority-critical);">
+              <div class="stat-card">
+                <div>
+                  <div class="stat-val">${totalTickets}</div>
+                  <div class="stat-label">Total Campus Tickets</div>
+                </div>
+                <div class="stat-icon-wrap">📋</div>
+              </div>
+
+              <div class="stat-card">
+                <div>
+                  <div class="stat-val" style="color: #D97706;">${totalActive}</div>
+                  <div class="stat-label">Active / Under Triage</div>
+                </div>
+                <div class="stat-icon-wrap" style="background: #FEF3C7; color: #D97706;">⚙️</div>
+              </div>
+
+              <div class="stat-card">
+                <div>
+                  <div class="stat-val" style="color: #059669;">${resolvedCount}</div>
+                  <div class="stat-label">Resolved Issues</div>
+                </div>
+                <div class="stat-icon-wrap" style="background: #ECFDF5; color: #059669;">✓</div>
+              </div>
+
+              <div class="stat-card" style="border-left: 4px solid var(--priority-critical);">
                 <div>
                   <div class="stat-val" style="color: var(--priority-critical);">${criticalCount}</div>
-                  <div class="stat-label">Critical Priority (AI Flagged)</div>
+                  <div class="stat-label">Critical Priority (Flagged)</div>
                 </div>
-                <div class="stat-icon-wrap" style="background: #FEE2E2; color: #DC2626;">🚨</div>
-              </div>
-
-              <div class="stat-card" style="border-left: 6px solid var(--priority-high);">
-                <div>
-                  <div class="stat-val" style="color: var(--priority-high);">${highCount}</div>
-                  <div class="stat-label">High Priority Tickets</div>
-                </div>
-                <div class="stat-icon-wrap" style="background: #FFEDD5; color: #EA580C;">⚡</div>
-              </div>
-
-              <div class="stat-card" style="border-left: 6px solid #3B82F6;">
-                <div>
-                  <div class="stat-val" style="color: #1D4ED8;">${totalActive}</div>
-                  <div class="stat-label">Open Active Queue</div>
-                </div>
-                <div class="stat-icon-wrap" style="background: #DBEAFE; color: #1D4ED8;">📋</div>
+                <div class="stat-icon-wrap" style="background: #FEF2F2; color: #DC2626;">🚨</div>
               </div>
             </div>
 

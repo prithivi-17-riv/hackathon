@@ -58,10 +58,19 @@ export function createStaffComplaintDetailView(params) {
                   ${complaint.description}
                 </p>
 
+                ${complaint.audioUrl ? `
+                  <div style="margin-bottom: 16px; padding: 14px; background: #F8FAFC; border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: var(--color-secondary); margin-bottom: 8px;">
+                      🎙️ Student Voice Note Recording:
+                    </div>
+                    <audio controls src="${complaint.audioUrl}" style="width: 100%; display: block; border-radius: 6px;"></audio>
+                  </div>
+                ` : ''}
+
                 ${complaint.photoUrl ? `
                   <div style="margin-bottom: 16px;">
                     <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;">Student Attached Photo:</div>
-                    <img src="${complaint.photoUrl}" alt="Fault" style="width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--radius-md); border: 2px solid var(--color-border);">
+                    <img src="${complaint.photoUrl}" alt="Fault" style="width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
                   </div>
                 ` : ''}
 

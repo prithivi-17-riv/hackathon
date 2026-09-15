@@ -40,39 +40,39 @@ export function createChatbotView() {
             <span class="current">CareBot AI Assistant</span>
           </div>
 
-          <div class="card card-chunky" style="padding: 0; overflow: hidden; height: calc(100vh - 200px); min-height: 540px; display: flex; flex-direction: column;">
+          <div class="card" style="padding: 0; overflow: hidden; height: calc(100vh - 200px); min-height: 540px; display: flex; flex-direction: column; border: 1px solid var(--color-border); box-shadow: var(--shadow-card);">
             
             <!-- Chat Header -->
-            <div style="background: var(--color-secondary); color: #FFFFFF; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--color-primary);">
+            <div style="background: #0F172A; color: #FFFFFF; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1E293B;">
               <div style="display: flex; align-items: center; gap: 12px;">
-                <div class="floating-bot-btn" style="position: static; padding: 0; width: 42px; height: 42px; border-radius: 50%; box-shadow: none;">
-                  <span style="font-size: 1.3rem;">🤖</span>
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--color-primary); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                  💬
                 </div>
                 <div>
-                  <h3 style="color: #FFFFFF; font-size: 1.1rem; margin: 0;">CareBot AI Assistant</h3>
-                  <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--color-accent);">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent);"></span>
-                    Online & Ready to triage
+                  <h3 style="color: #FFFFFF; font-size: 1.05rem; font-weight: 600; margin: 0;">CareBot Support Assistant</h3>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94A3B8;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10B981;"></span>
+                    Automated Facility Support
                   </div>
                 </div>
               </div>
 
-              <button class="btn btn-outline btn-sm" id="reset-chat-btn" style="background: rgba(255,255,255,0.1); color: #FFFFFF; border-color: rgba(255,255,255,0.3); font-size: 0.75rem;">
-                🔄 Restart Chat
+              <button class="btn btn-outline btn-sm" id="reset-chat-btn" style="background: rgba(255,255,255,0.08); color: #FFFFFF; border-color: rgba(255,255,255,0.2); font-size: 0.75rem;">
+                Restart Chat
               </button>
             </div>
 
             <!-- Messages Log Area -->
-            <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: #FAF8F5;">
+            <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--color-bg);">
               ${messages.map(msg => renderMessage(msg)).join('')}
             </div>
 
             <!-- Chat Input Area -->
-            <div style="padding: 16px 20px; background: #FFFFFF; border-top: 2px solid var(--color-border);">
+            <div style="padding: 14px 20px; background: #FFFFFF; border-top: 1px solid var(--color-border);">
               <form id="chat-input-form" style="display: flex; gap: 10px;">
-                <input type="text" id="chat-user-input" class="form-control" placeholder="Type your message or select an option above..." autocomplete="off" required>
-                <button type="submit" class="btn btn-primary" id="chat-send-btn" style="flex-shrink: 0; padding: 10px 20px;">
-                  Send ➔
+                <input type="text" id="chat-user-input" class="form-control" placeholder="Type your inquiry or select an option above..." autocomplete="off" required>
+                <button type="submit" class="btn btn-primary" id="chat-send-btn" style="flex-shrink: 0; padding: 9px 18px;">
+                  Send
                 </button>
               </form>
             </div>
@@ -293,20 +293,20 @@ function renderMessage(msg) {
   return `
     <div style="display: flex; gap: 10px; align-self: ${isBot ? 'flex-start' : 'flex-end'}; max-width: 82%;">
       ${isBot ? `
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-accent); color: var(--color-secondary); border: 2px solid var(--color-secondary); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; box-shadow: 0 2px 0 var(--color-secondary);">
-          🤖
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary-light); color: var(--color-primary); border: 1px solid rgba(37, 99, 235, 0.2); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">
+          💬
         </div>
       ` : ''}
 
       <div>
-        <div style="background: ${isBot ? '#FFFFFF' : 'var(--color-primary)'}; color: ${isBot ? 'var(--color-text-main)' : '#FFFFFF'}; border: 2px solid ${isBot ? 'var(--color-border)' : 'var(--color-secondary)'}; border-radius: var(--radius-lg); padding: 12px 16px; box-shadow: ${isBot ? 'var(--shadow-subtle)' : '0 3px 0 var(--color-secondary)'}; font-size: 0.92rem; line-height: 1.5;">
+        <div style="background: ${isBot ? '#FFFFFF' : 'var(--color-primary)'}; color: ${isBot ? 'var(--color-text-main)' : '#FFFFFF'}; border: 1px solid ${isBot ? 'var(--color-border)' : 'transparent'}; border-radius: var(--radius-lg); padding: 12px 16px; box-shadow: var(--shadow-subtle); font-size: 0.9rem; line-height: 1.5;">
           ${formatted}
         </div>
 
         ${isBot && msg.options && msg.options.length > 0 ? `
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
             ${msg.options.map(opt => `
-              <button type="button" class="chat-option-pill" style="background: #FFFFFF; border: 1.5px solid var(--color-secondary); color: var(--color-secondary); padding: 5px 12px; border-radius: var(--radius-full); font-size: 0.785rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 0 var(--color-secondary); transition: all 0.15s ease;">
+              <button type="button" class="chat-option-pill" style="background: #FFFFFF; border: 1px solid var(--color-border); color: var(--color-primary); padding: 5px 12px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 500; cursor: pointer; box-shadow: var(--shadow-subtle); transition: all 0.15s ease;">
                 ${opt}
               </button>
             `).join('')}

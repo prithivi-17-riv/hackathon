@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.complaints (
   assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   estimated_resolution_time TEXT,
   photo_url TEXT,
+  audio_url TEXT,
   resolution_proof TEXT,
   upvotes INTEGER NOT NULL DEFAULT 1,
   upvoted_by UUID[] NOT NULL DEFAULT '{}',

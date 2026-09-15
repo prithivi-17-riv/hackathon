@@ -12,16 +12,16 @@
 
 /* Demo Role Switcher Bar */
 .demo-role-bar {
-  background-color: var(--color-secondary);
-  color: #FFFFFF;
-  padding: 8px 16px;
+  background-color: #0F172A;
+  color: #F8FAFC;
+  padding: 8px 24px;
   font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
-  border-bottom: 2px solid #312E81;
+  border-bottom: 1px solid #1E293B;
   z-index: 1000;
 }
 
@@ -32,32 +32,34 @@
 }
 
 .role-pill-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-full);
-  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .role-pill-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
 }
 
 .role-pill-btn.active {
-  background-color: var(--color-accent);
-  color: var(--color-secondary);
-  border-color: var(--color-accent);
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Student Top Navbar */
 .top-navbar {
   background-color: #FFFFFF;
-  border-bottom: 2px solid var(--color-border);
-  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -76,23 +78,22 @@
 }
 
 .brand-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background-color: var(--color-primary);
-  border: 2px solid var(--color-secondary);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
-  font-size: 1.25rem;
-  box-shadow: 0 3px 0 var(--color-secondary);
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
 
 .brand-title {
   font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-secondary);
   line-height: 1;
@@ -105,7 +106,7 @@
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -117,8 +118,8 @@
   gap: 6px;
   text-decoration: none;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
   padding: 8px 14px;
   border-radius: var(--radius-md);
@@ -131,35 +132,36 @@
 }
 
 .nav-link-item.active {
-  color: var(--color-secondary);
-  background-color: var(--color-bg-alt);
-  font-weight: 800;
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  font-weight: 600;
 }
 
 .user-profile-badge {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 12px;
-  background-color: var(--color-bg-alt);
-  border: 1.5px solid var(--color-border);
+  padding: 5px 12px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.825rem;
+  font-weight: 600;
   color: var(--color-secondary);
+  box-shadow: var(--shadow-subtle);
 }
 
 .user-avatar-circle {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background-color: var(--color-primary);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 /* Admin / Staff Split Layout with Sidebar */
@@ -170,9 +172,9 @@
 }
 
 .sidebar {
-  width: 260px;
+  width: 250px;
   background-color: #FFFFFF;
-  border-right: 2px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -183,17 +185,18 @@
 .sidebar-header {
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sidebar-role-tag {
   display: inline-block;
   font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  background-color: var(--color-secondary);
-  color: var(--color-accent);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   margin-top: 6px;
@@ -202,7 +205,7 @@
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -214,30 +217,29 @@
   gap: 12px;
   text-decoration: none;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.9rem;
   color: var(--color-text-muted);
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   transition: all var(--transition-fast);
 }
 
 .sidebar-link:hover {
   background-color: var(--color-bg-alt);
   color: var(--color-secondary);
-  border-color: var(--color-border);
 }
 
 .sidebar-link.active {
   background-color: var(--color-primary-light);
   color: var(--color-primary);
-  border-color: var(--color-primary);
-  box-shadow: 0 3px 0 var(--color-primary);
+  border-color: transparent;
+  font-weight: 600;
 }
 
 .sidebar-link .icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   width: 20px;
   text-align: center;
 }
@@ -269,30 +271,31 @@
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-secondary);
-  line-height: 1.15;
+  line-height: 1.2;
   margin: 0;
 }
 
 .page-subtitle {
   color: var(--color-text-muted);
-  font-size: 0.95rem;
-  margin-top: 6px;
+  font-size: 0.925rem;
+  margin-top: 4px;
 }
 
 /* Metric / Stat Cards Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
   background-color: #FFFFFF;
-  border: 2px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 20px;
   box-shadow: var(--shadow-card);
@@ -303,36 +306,36 @@
 }
 
 .stat-card:hover {
-  border-color: var(--color-secondary);
-  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
   box-shadow: var(--shadow-card-hover);
 }
 
 .stat-val {
   font-family: var(--font-display);
-  font-size: 2.2rem;
-  font-weight: 800;
+  font-size: 1.85rem;
+  font-weight: 700;
   color: var(--color-secondary);
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.825rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--color-text-muted);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .stat-icon-wrap {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
-  border: 2px solid var(--color-secondary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  box-shadow: 0 3px 0 var(--color-secondary);
+  font-size: 1.3rem;
 }
 
 /* Mobile Bottom Tab Bar */

@@ -32,8 +32,8 @@ class App {
     router.register('login', createLandingView, { allowedRoles: ['guest', 'student', 'admin', 'staff'], title: 'Sign In' });
     router.register('signup', createSignupView, { allowedRoles: ['guest', 'student'], title: 'Student Sign Up' });
 
-    // Student Routes
-    router.register('dashboard', createDashboardView, { allowedRoles: ['student'], title: 'Student Dashboard' });
+    // Student & Campus Dashboard Routes
+    router.register('dashboard', createDashboardView, { allowedRoles: ['student', 'staff', 'admin'], title: 'Campus Dashboard' });
     router.register('complaints/new', createNewComplaintView, { allowedRoles: ['student'], title: 'Report Issue' });
     router.register('complaints/:id', (params) => createComplaintDetailView(params), { allowedRoles: ['student', 'admin', 'staff'], title: 'Ticket Tracking' });
     router.register('chatbot', createChatbotView, { allowedRoles: ['student'], title: 'CareBot AI Assistant' });
@@ -61,14 +61,16 @@ class App {
       ${role === 'student' ? `
         <nav class="top-navbar">
           <a href="#/dashboard" class="brand-logo">
-            <div class="brand-icon">⚡</div>
+            <div class="brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+            </div>
             <span class="brand-title">Campus<span>Care</span></span>
           </a>
 
           <ul class="nav-links">
-            <li><a href="#/dashboard" class="nav-link-item" data-route="/dashboard">📋 Dashboard</a></li>
-            <li><a href="#/complaints/new" class="nav-link-item" data-route="/complaints/new">➕ Report Issue</a></li>
-            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">🤖 CareBot AI</a></li>
+            <li><a href="#/dashboard" class="nav-link-item" data-route="/dashboard">Dashboard</a></li>
+            <li><a href="#/complaints/new" class="nav-link-item" data-route="/complaints/new">Report Issue</a></li>
+            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">Campus Assistant</a></li>
           </ul>
 
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -76,7 +78,7 @@ class App {
               <div class="user-avatar-circle">${user ? user.avatar : 'AS'}</div>
               <span>${user ? user.name : 'Student'}</span>
             </div>
-            <button id="signout-btn" class="btn btn-outline btn-sm" style="box-shadow: none; font-size: 0.8rem; padding: 4px 10px;">🚪 Sign Out</button>
+            <button id="signout-btn" class="btn btn-outline btn-sm" style="box-shadow: none; font-size: 0.8rem; padding: 5px 12px;">Sign Out</button>
           </div>
         </nav>
       ` : ''}
@@ -102,19 +104,20 @@ class App {
             </li>
             <li>
               <a href="#/chatbot" class="mobile-nav-link" data-route="/chatbot">
-                <span class="icon">🤖</span>
-                <span>CareBot</span>
+                <span class="icon">💬</span>
+                <span>Assistant</span>
               </a>
             </li>
           </ul>
         </nav>
       ` : ''}
 
-      <!-- 5. Floating CareBot Mascot Button (Student Pages) -->
-      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="Chat with CareBot AI">
-        <div class="bot-pulse-ring"></div>
-        <div class="bot-avatar">🤖</div>
-        <span>Ask CareBot</span>
+      <!-- 5. Floating AI Assistant Button (Student Pages) -->
+      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="Campus Assistant">
+        <div class="bot-avatar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <span>Campus Assistant</span>
       </a>
 
       <!-- 6. Global Toast Notifications Queue -->

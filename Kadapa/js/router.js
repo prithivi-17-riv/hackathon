@@ -20,12 +20,16 @@ class Router {
   }
 
   init() {
-    window.addEventListener('hashchange', () => this.handleRoute());
-    window.addEventListener('load', () => this.handleRoute());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('hashchange', () => this.handleRoute());
+      window.addEventListener('load', () => this.handleRoute());
+    }
   }
 
   navigate(hash) {
-    window.location.hash = hash.startsWith('#') ? hash : `#${hash}`;
+    if (typeof window !== 'undefined') {
+      window.location.hash = hash.startsWith('#') ? hash : `#${hash}`;
+    }
   }
 
   parseRoute(hash) {

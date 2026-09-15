@@ -9,25 +9,25 @@ export function createSignupView() {
   return {
     render() {
       return `
-        <div class="page-container" style="max-width: 540px; padding-top: 30px;">
+        <div class="page-container" style="max-width: 520px; padding-top: 36px;">
           <div style="text-align: center; margin-bottom: 24px;">
-            <div class="brand-icon" style="margin: 0 auto 12px; width: 48px; height: 48px; font-size: 1.5rem;">⚡</div>
-            <h1 style="font-size: 2rem; color: var(--color-secondary); margin-bottom: 6px;">Create Account</h1>
+            <div class="brand-icon" style="margin: 0 auto 12px; width: 42px; height: 42px; font-size: 1.2rem;">⚡</div>
+            <h1 style="font-size: 1.85rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 6px;">Create Account</h1>
             <p style="color: var(--color-text-muted); font-size: 0.9rem;">Register to access Student, Staff, or Authority Portals</p>
           </div>
 
-          <div class="card card-chunky">
+          <div class="card" style="padding: 28px; border: 1px solid var(--color-border); box-shadow: var(--shadow-card);">
             <!-- Dynamic DOM Error Alert Container -->
-            <div id="signup-error-banner" style="display: none; background: #FEE2E2; border: 1.5px solid #FCA5A5; color: #991B1B; padding: 12px 14px; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 600; margin-bottom: 16px;"></div>
+            <div id="signup-error-banner" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: 10px 14px; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 500; margin-bottom: 16px;"></div>
 
             <form id="signup-form">
               <!-- Account Role Selector -->
               <div class="form-group">
                 <label class="form-label">Portal Account Type / Role <span class="required">*</span></label>
-                <select id="signup-role" class="form-control" required style="font-weight: 600; border-color: var(--color-primary);">
-                  <option value="student">👨‍🎓 Student Portal (Report & Track Issues)</option>
-                  <option value="staff">👨‍🔧 Staff / Technician Portal (Resolve Work Orders)</option>
-                  <option value="admin">👩‍💼 Authority / Admin Portal (Triage Queue & Analytics)</option>
+                <select id="signup-role" class="form-control" required style="font-weight: 600;">
+                  <option value="student">Student Portal (Report & Track Issues)</option>
+                  <option value="staff">Staff / Technician Portal (Resolve Work Orders)</option>
+                  <option value="admin">Authority / Admin Portal (Triage Queue & Analytics)</option>
                 </select>
               </div>
 

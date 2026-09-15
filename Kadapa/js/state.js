@@ -17,14 +17,14 @@ class StateManager {
 
   loadState() {
     try {
-      const cached = localStorage.getItem(STORAGE_KEY);
+      const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
       if (cached) {
         const parsed = JSON.parse(cached);
         return {
           currentUser: parsed.currentUser || null,
           currentRole: parsed.currentRole || 'guest',
-          complaints: parsed.complaints || [],
-          users: parsed.users || []
+          complaints: (parsed.complaints && parsed.complaints.length > 0) ? parsed.complaints : [...INITIAL_COMPLAINTS],
+          users: (parsed.users && parsed.users.length > 0) ? parsed.users : [...INITIAL_USERS]
         };
       }
     } catch (e) {
@@ -34,8 +34,8 @@ class StateManager {
     return {
       currentUser: null,
       currentRole: 'guest',
-      complaints: [],
-      users: []
+      complaints: [...INITIAL_COMPLAINTS],
+      users: [...INITIAL_USERS]
     };
   }
 
@@ -148,7 +148,9 @@ class StateManager {
 
   saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      }
     } catch (e) {
       console.error('Error saving state to localStorage:', e);
     }
@@ -197,7 +199,8 @@ class StateManager {
   }
 
   getComplaintById(id) {
-    return this.state.complaints.find(c => c.id === id || c.ticket_number === id) || null;
+    if (!id) return null;
+    return this.state.complaints.find(c => c.id === id || c.ticket_number === id || c.dbId === id) || null;
   }
 
   addComplaint(complaint) {
@@ -207,7 +210,8 @@ class StateManager {
   }
 
   updateComplaint(id, updates) {
-    const index = this.state.complaints.findIndex(c => c.id === id || c.ticket_number === id);
+    if (!id) return null;
+    const index = this.state.complaints.findIndex(c => c.id === id || c.ticket_number === id || c.dbId === id);
     if (index !== -1) {
       this.state.complaints[index] = {
         ...this.state.complaints[index],
@@ -224,7 +228,9 @@ class StateManager {
     const complaint = this.getComplaintById(complaintId);
     if (!complaint) return null;
 
-    if (!complaint.upvotedBy) complaint.upvotedBy = [];
+    if (!Array.isArray(complaint.upvotedBy)) {
+      complaint.upvotedBy = [];
+    }
     const index = complaint.upvotedBy.indexOf(userId);
 
     if (index > -1) {

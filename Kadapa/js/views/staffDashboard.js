@@ -32,52 +32,91 @@ export function createStaffDashboardView() {
       }
 
       const activeCount = myTickets.filter(c => c.status !== 'Resolved').length;
+      const totalTickets = allComplaints.length;
+      const totalActive = allComplaints.filter(c => c.status !== 'Resolved' && c.status !== 'Rejected').length;
+      const totalResolved = allComplaints.filter(c => c.status === 'Resolved').length;
+      const assignedCount = myTickets.length;
 
       return `
         <div class="page-container" style="max-width: 1040px;">
           <!-- Staff Welcome Header -->
-          <div class="card card-chunky" style="background: linear-gradient(135deg, #064E3B 0%, #047857 100%); color: #FFFFFF; margin-bottom: 24px; padding: 24px 28px;">
+          <div class="card" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; margin-bottom: 24px; padding: 24px 28px; border: 1px solid #1E293B;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
               <div>
-                <span class="badge badge-resolved" style="background: rgba(255,255,255,0.2); color: #FFFFFF; border-color: rgba(255,255,255,0.4); margin-bottom: 8px;">
-                  🔧 Field Technician Console
+                <span class="badge badge-resolved" style="background: rgba(5, 150, 105, 0.2); color: #6EE7B7; border-color: rgba(5, 150, 105, 0.4); margin-bottom: 8px;">
+                  Staff & Faculty Console
                 </span>
-                <h1 style="color: #FFFFFF; font-size: 1.8rem; margin-bottom: 4px;">Welcome back, ${staffUser.name}</h1>
-                <p style="color: #A7F3D0; font-size: 0.88rem; margin: 0;">
+                <h1 style="color: #FFFFFF; font-size: 1.75rem; font-weight: 700; margin-bottom: 4px;">Welcome back, ${staffUser.name}</h1>
+                <p style="color: #94A3B8; font-size: 0.88rem; margin: 0;">
                   ${staffUser.department} • Active Work Orders Assigned: <strong>${activeCount}</strong>
                 </p>
               </div>
 
               <div style="display: flex; gap: 8px;">
-                <button class="btn btn-accent btn-sm" id="staff-refresh-queue-btn">
-                  🔄 Refresh Tickets
+                <button class="btn btn-primary btn-sm" id="staff-refresh-queue-btn">
+                  Refresh Tickets
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- 4 Stats Columns: Visible to Teachers & Staff -->
+          <div class="stats-grid" style="margin-bottom: 24px;">
+            <div class="stat-card">
+              <div>
+                <div class="stat-val">${totalTickets}</div>
+                <div class="stat-label">Total Campus Tickets</div>
+              </div>
+              <div class="stat-icon-wrap">📋</div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" style="color: #D97706;">${totalActive}</div>
+                <div class="stat-label">Active / Under Triage</div>
+              </div>
+              <div class="stat-icon-wrap" style="background: #FEF3C7; color: #D97706;">⚙️</div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" style="color: #059669;">${totalResolved}</div>
+                <div class="stat-label">Resolved Issues</div>
+              </div>
+              <div class="stat-icon-wrap" style="background: #ECFDF5; color: #059669;">✓</div>
+            </div>
+
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" style="color: var(--color-primary);">${assignedCount}</div>
+                <div class="stat-label">Assigned to You</div>
+              </div>
+              <div class="stat-icon-wrap" style="background: var(--color-bg-alt); color: var(--color-secondary);">👨‍🔧</div>
             </div>
           </div>
 
           <!-- Status Filters -->
           <div style="display: flex; gap: 8px; margin-bottom: 20px;" id="staff-status-tabs">
             ${['All', 'Active', 'Resolved'].map(tab => `
-              <button class="role-pill-btn ${statusTab === tab ? 'active' : ''}" data-staff-tab="${tab}" style="background: ${statusTab === tab ? 'var(--color-secondary)' : '#FFFFFF'}; color: ${statusTab === tab ? '#FFFFFF' : 'var(--color-secondary)'}; border: 1.5px solid var(--color-border); font-size: 0.85rem; padding: 6px 14px;">
+              <button class="role-pill-btn ${statusTab === tab ? 'active' : ''}" data-staff-tab="${tab}" style="background: ${statusTab === tab ? 'var(--color-primary)' : '#FFFFFF'}; color: ${statusTab === tab ? '#FFFFFF' : 'var(--color-text-muted)'}; border: 1px solid ${statusTab === tab ? 'var(--color-primary)' : 'var(--color-border)'}; font-size: 0.825rem; padding: 6px 14px;">
                 ${tab} Tickets
               </button>
             `).join('')}
           </div>
 
           <!-- Work Order Cards -->
-          <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
             ${myTickets.length === 0 ? `
               <div class="card" style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 2.5rem; margin-bottom: 8px;">🎉</div>
-                <h3 style="color: var(--color-secondary); margin-bottom: 6px;">All Assigned Tickets Cleared!</h3>
+                <div style="font-size: 2.2rem; margin-bottom: 8px; color: #059669;">✓</div>
+                <h3 style="color: var(--color-secondary); margin-bottom: 6px;">All Assigned Tickets Cleared</h3>
                 <p style="color: var(--color-text-muted);">No open work orders pending in your queue.</p>
               </div>
             ` : myTickets.map(ticket => {
               const statusClass = ticket.status.toLowerCase().replace(/\s+/g, '-');
 
               return `
-                <div class="card card-hoverable" style="border: 2px solid var(--color-border); padding: 20px;">
+                <div class="card card-hoverable" style="padding: 20px;">
                   <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                     
                     <div style="flex: 1; min-width: 280px;">
