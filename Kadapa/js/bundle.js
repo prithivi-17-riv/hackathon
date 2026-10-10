@@ -119,7 +119,7 @@ const INITIAL_COMPLAINTS = [
     resolutionProof: null,
     timeline: [
       { step: 'Submitted', title: 'Complaint Registered', description: 'Student submitted issue with photo evidence.', actor: 'Aarav Sharma', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString() },
-      { step: 'Acknowledged', title: 'Triaged by Warden AI', description: 'Priority upgraded to High due to hallway hazard.', actor: 'CampusCare AI', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+      { step: 'Acknowledged', title: 'Triaged by Warden AI', description: 'Priority upgraded to High due to hallway hazard.', actor: 'UniVerse AI', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
       { step: 'Assigned', title: 'Assigned to HVAC Team', description: 'Work order dispatched to Suresh Kumar.', actor: 'Admin Desk', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString() },
       { step: 'In Progress', title: 'Technician on Site', description: 'Inspecting evaporator drain pipe.', actor: 'Suresh Kumar', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() }
     ],
@@ -854,7 +854,7 @@ const api = {
 
           api.sendEmailNotification({
             to: currentUser.email || 'student@campus.edu',
-            subject: `CampusCare: Ticket #${ticketNumber} Logged Successfully`,
+            subject: `UniVerse: Ticket #${ticketNumber} Logged Successfully`,
             message: `Your issue "${payload.title}" has been registered.`
           });
 
@@ -905,7 +905,7 @@ const api = {
 
     api.sendEmailNotification({
       to: newComplaint.submittedBy.email,
-      subject: `CampusCare: Ticket #${newComplaint.id} Logged Successfully`,
+      subject: `UniVerse: Ticket #${newComplaint.id} Logged Successfully`,
       message: `Your issue "${newComplaint.title}" has been registered.`
     });
 
@@ -1188,7 +1188,7 @@ const api = {
     doc.setTextColor(212, 255, 0);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('CAMPUSCARE - AI SMART COMPLAINT AUDIT REPORT', 14, 18);
+    doc.text('UNIVERSE - AI SMART COMPLAINT AUDIT REPORT', 14, 18);
 
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
@@ -1253,7 +1253,7 @@ const api = {
       });
     }
 
-    doc.save(`CampusCare-Complaint-Report-${Date.now()}.pdf`);
+    doc.save(`UniVerse-Complaint-Report-${Date.now()}.pdf`);
     return true;
   }
 };
@@ -1276,7 +1276,7 @@ class Router {
     this.routes[path] = {
       handler: viewHandler,
       allowedRoles: options.allowedRoles || ['student', 'admin', 'staff', 'guest'],
-      title: options.title || 'CampusCare'
+      title: options.title || 'UniVerse'
     };
   }
 
@@ -1368,7 +1368,7 @@ class Router {
     }
 
     // Set Document Title
-    document.title = `${route?.title || 'Smart Complaint System'} | CampusCare`;
+    document.title = `${route?.title || 'Smart Complaint System'} | UniVerse`;
 
     // Render View Container
     const mainContainer = document.getElementById('main-content');
@@ -1468,7 +1468,7 @@ function createLandingView() {
               Campus Operations & Facilities Management
             </div>
             <h1 style="font-size: 2.1rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 8px; letter-spacing: -0.02em;">
-              Sign In to <span style="color: var(--color-primary);">CampusCare</span>
+              Sign In to <span style="color: var(--color-primary);">UniVerse</span>
             </h1>
             <p style="font-size: 0.925rem; color: var(--color-text-muted); max-width: 420px; margin: 0 auto;">
               Centralized complaint tracking, intelligent duplicate resolution, and dispatch workflow.
@@ -1518,6 +1518,10 @@ function createLandingView() {
         try {
           await stateManager.signIn({ email, password });
           const user = stateManager.getState().currentUser;
+
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
 
           if (user?.role === 'admin') router.navigate('/admin');
           else if (user?.role === 'staff') router.navigate('/staff');
@@ -1688,7 +1692,11 @@ function createSignupView() {
             }
           }));
 
-          // Redirect to the appropriate portal
+          // Refresh shell and redirect to the appropriate portal
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
+
           if (role === 'admin') {
             router.navigate('/admin');
           } else if (role === 'staff') {
@@ -2838,7 +2846,7 @@ function createChatbotView() {
   const messages = [
     {
       sender: 'bot',
-      text: "👋 Hi there! I'm **CareBot**, your 24/7 AI Campus Assistant. I can help you report an issue step-by-step or check the status of your existing complaints.",
+      text: "👋 Hi there! I'm **UniVerse AI**, your 24/7 Campus Assistant. I can help you report an issue step-by-step or check the status of your existing complaints.",
       options: ['➕ Report an Issue', '📊 Check My Ticket Status', '📶 Wi-Fi Support Info', '🚨 Campus Emergency Contacts']
     }
   ];
@@ -2851,7 +2859,7 @@ function createChatbotView() {
           <div class="breadcrumbs">
             <a href="#/dashboard">Dashboard</a>
             <span class="separator">/</span>
-            <span class="current">CareBot AI Assistant</span>
+            <span class="current">UniVerse AI Assistant</span>
           </div>
 
           <div class="card" style="padding: 0; overflow: hidden; height: calc(100vh - 200px); min-height: 540px; display: flex; flex-direction: column; border: 1px solid var(--color-border); box-shadow: var(--shadow-card);">
@@ -2863,7 +2871,7 @@ function createChatbotView() {
                   💬
                 </div>
                 <div>
-                  <h3 style="color: #FFFFFF; font-size: 1.05rem; font-weight: 600; margin: 0;">CareBot Support Assistant</h3>
+                  <h3 style="color: #FFFFFF; font-size: 1.05rem; font-weight: 600; margin: 0;">UniVerse Support Assistant</h3>
                   <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94A3B8;">
                     <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10B981;"></span>
                     Automated Facility Support
@@ -3155,7 +3163,7 @@ function createAdminDashboardView() {
         sortByPriority: sortBy === 'priority'
       });
 
-      let complaints = res.data;
+      let complaints = res?.data || [];
 
       // Search filtering
       if (searchQuery.trim()) {
@@ -3174,8 +3182,8 @@ function createAdminDashboardView() {
       }
 
       const totalActive = complaints.filter(c => c.status !== 'Resolved').length;
-      const criticalCount = complaints.filter(c => c.priorityMetrics.tier === 'Critical').length;
-      const highCount = complaints.filter(c => c.priorityMetrics.tier === 'High').length;
+      const criticalCount = complaints.filter(c => c.priorityMetrics?.tier === 'Critical').length;
+      const highCount = complaints.filter(c => c.priorityMetrics?.tier === 'High').length;
       const totalTickets = complaints.length;
       const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
 
@@ -3189,7 +3197,7 @@ function createAdminDashboardView() {
                   <div class="brand-icon" style="width: 32px; height: 32px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                   </div>
-                  <span class="brand-title" style="font-size: 1.15rem;">Campus<span>Care</span></span>
+                  <span class="brand-title" style="font-size: 1.15rem;">Uni<span>Verse</span></span>
                 </div>
                 <div class="sidebar-role-tag">Admin Console</div>
                 <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 6px;">
@@ -3353,8 +3361,9 @@ function createAdminDashboardView() {
                       </td>
                     </tr>
                   ` : complaints.map(c => {
-                    const p = c.priorityMetrics;
-                    const statusClass = c.status.toLowerCase().replace(/\s+/g, '-');
+                    const p = c.priorityMetrics || { tier: 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+                    const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
+                    const statusClass = (c.status || 'Submitted').toLowerCase().replace(/\s+/g, '-');
 
                     return `
                       <tr>
@@ -3363,13 +3372,13 @@ function createAdminDashboardView() {
                           <a href="#/admin/complaints/${c.id}" style="font-weight: 800; color: var(--color-secondary);">
                             #${c.id}
                           </a>
-                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt).toLocaleDateString()}</div>
+                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt || Date.now()).toLocaleDateString()}</div>
                         </td>
 
                         <!-- AI Priority Badge with score breakdown -->
                         <td>
-                          <span class="badge ${p.badgeClass}" title="Score factors: Keywords (${p.factors.keywordScore}) + Wait (${p.factors.waitScore}) + Upvotes (${p.factors.upvoteScore}) + Hazard (${p.factors.categoryBase})">
-                            ${p.tier} • ${p.score} pts
+                          <span class="badge ${p.badgeClass || 'badge-medium'}" title="Score factors: Keywords (${factors.keywordScore || 0}) + Wait (${factors.waitScore || 0}) + Upvotes (${factors.upvoteScore || 0}) + Hazard (${factors.categoryBase || 0})">
+                            ${p.tier || 'Medium'} • ${p.score || 50} pts
                           </span>
                         </td>
 
@@ -3510,7 +3519,7 @@ function createAdminAnalyticsView() {
                   <div class="brand-icon" style="width: 32px; height: 32px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                   </div>
-                  <span class="brand-title" style="font-size: 1.15rem;">Campus<span>Care</span></span>
+                  <span class="brand-title" style="font-size: 1.15rem;">Uni<span>Verse</span></span>
                 </div>
                 <div class="sidebar-role-tag">Analytics Engine</div>
                 <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 6px;">
@@ -4448,13 +4457,13 @@ class App {
             <div class="brand-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
             </div>
-            <span class="brand-title">Campus<span>Care</span></span>
+            <span class="brand-title">Uni<span>Verse</span></span>
           </a>
 
           <ul class="nav-links">
             <li><a href="#/dashboard" class="nav-link-item" data-route="/dashboard">Dashboard</a></li>
             <li><a href="#/complaints/new" class="nav-link-item" data-route="/complaints/new">Report Issue</a></li>
-            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">Campus Assistant</a></li>
+            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">UniVerse Assistant</a></li>
           </ul>
 
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -4497,11 +4506,11 @@ class App {
       ` : ''}
 
       <!-- 5. Floating AI Assistant Button (Student Pages) -->
-      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="Campus Assistant">
+      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="UniVerse Assistant">
         <div class="bot-avatar">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </div>
-        <span>Campus Assistant</span>
+        <span>UniVerse Assistant</span>
       </a>
 
       <!-- 6. Global Toast Notifications Queue -->
@@ -4576,11 +4585,12 @@ class App {
 function bootstrapApp() {
   try {
     const app = new App();
+    window.__universe_app = app;
     router.handleRoute();
 
-    // Subscribe to state updates to update shell if role changes
+    // Preserve shell DOM on data updates
     stateManager.subscribe(() => {
-      app.renderShell();
+      // Data change events do not destroy shell DOM
     });
   } catch (err) {
     console.error('Fatal initialization error:', err);
@@ -4589,7 +4599,7 @@ function bootstrapApp() {
       appRoot.innerHTML = `
         <div style="padding: 40px; text-align: center; font-family: system-ui, sans-serif;">
           <h2 style="color: #DC2626; margin-bottom: 8px;">Initialization Error</h2>
-          <p style="color: #64607D; margin-bottom: 16px;">${err.message || 'Failed to start CampusCare application.'}</p>
+          <p style="color: #64607D; margin-bottom: 16px;">${err.message || 'Failed to start UniVerse application.'}</p>
           <button onclick="localStorage.clear(); window.location.reload();" style="padding: 10px 20px; background: #FF5733; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
             🔄 Clear Cache & Reload
           </button>

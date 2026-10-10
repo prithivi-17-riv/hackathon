@@ -1,6 +1,6 @@
-# ⚡ CampusCare — AI-Powered Smart Campus Complaint Management System
+# ⚡ UniVerse — AI-Powered Smart Campus Complaint Management System
 
-**CampusCare** is a production-quality, responsive single-page web application built with plain HTML, CSS, and modern JavaScript (no frameworks required). It streamlines campus infrastructure reporting, AI-driven prioritization, automated duplicate mitigation, conversational chatbot filing, and cross-department technician dispatch.
+**UniVerse** is a production-quality, responsive single-page web application built with plain HTML, CSS, and modern JavaScript (no frameworks required). It streamlines campus infrastructure reporting, AI-driven prioritization, automated duplicate mitigation, conversational chatbot filing, and cross-department technician dispatch.
 
 ---
 

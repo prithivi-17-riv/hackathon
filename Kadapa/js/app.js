@@ -77,13 +77,13 @@ class App {
             <div class="brand-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
             </div>
-            <span class="brand-title">Campus<span>Care</span></span>
+            <span class="brand-title">Uni<span>Verse</span></span>
           </a>
 
           <ul class="nav-links">
             <li><a href="#/dashboard" class="nav-link-item" data-route="/dashboard">Dashboard</a></li>
             <li><a href="#/complaints/new" class="nav-link-item" data-route="/complaints/new">Report Issue</a></li>
-            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">Campus Assistant</a></li>
+            <li><a href="#/chatbot" class="nav-link-item" data-route="/chatbot">UniVerse Assistant</a></li>
           </ul>
 
           <div style="display: flex; align-items: center; gap: 12px;">
@@ -126,11 +126,11 @@ class App {
       ` : ''}
 
       <!-- 5. Floating AI Assistant Button (Student Pages) -->
-      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="Campus Assistant">
+      <a href="#/chatbot" id="floating-carebot-btn" class="floating-bot-btn" title="UniVerse Assistant">
         <div class="bot-avatar">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </div>
-        <span>Campus Assistant</span>
+        <span>UniVerse Assistant</span>
       </a>
 
       <!-- 6. Global Toast Notifications Queue -->
@@ -205,11 +205,12 @@ class App {
 function bootstrapApp() {
   try {
     const app = new App();
+    window.__universe_app = app;
     router.handleRoute();
 
-    // Subscribe to state updates to update shell if role changes
+    // Preserve shell DOM on data updates
     stateManager.subscribe(() => {
-      app.renderShell();
+      // Data change events do not destroy shell DOM
     });
   } catch (err) {
     console.error('Fatal initialization error:', err);
@@ -218,7 +219,7 @@ function bootstrapApp() {
       appRoot.innerHTML = `
         <div style="padding: 40px; text-align: center; font-family: system-ui, sans-serif;">
           <h2 style="color: #DC2626; margin-bottom: 8px;">Initialization Error</h2>
-          <p style="color: #64607D; margin-bottom: 16px;">${err.message || 'Failed to start CampusCare application.'}</p>
+          <p style="color: #64607D; margin-bottom: 16px;">${err.message || 'Failed to start UniVerse application.'}</p>
           <button onclick="localStorage.clear(); window.location.reload();" style="padding: 10px 20px; background: #FF5733; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
             🔄 Clear Cache & Reload
           </button>

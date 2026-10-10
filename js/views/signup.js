@@ -148,7 +148,11 @@ export function createSignupView() {
             }
           }));
 
-          // Redirect to the appropriate portal
+          // Refresh shell and redirect to the appropriate portal
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
+
           if (role === 'admin') {
             router.navigate('/admin');
           } else if (role === 'staff') {

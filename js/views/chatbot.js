@@ -24,7 +24,7 @@ export function createChatbotView() {
   const messages = [
     {
       sender: 'bot',
-      text: "👋 Hi there! I'm **CareBot**, your 24/7 AI Campus Assistant. I can help you report an issue step-by-step or check the status of your existing complaints.",
+      text: "👋 Hi there! I'm **UniVerse AI**, your 24/7 Campus Assistant. I can help you report an issue step-by-step or check the status of your existing complaints.",
       options: ['➕ Report an Issue', '📊 Check My Ticket Status', '📶 Wi-Fi Support Info', '🚨 Campus Emergency Contacts']
     }
   ];
@@ -37,7 +37,7 @@ export function createChatbotView() {
           <div class="breadcrumbs">
             <a href="#/dashboard">Dashboard</a>
             <span class="separator">/</span>
-            <span class="current">CareBot AI Assistant</span>
+            <span class="current">UniVerse AI Assistant</span>
           </div>
 
           <div class="card" style="padding: 0; overflow: hidden; height: calc(100vh - 200px); min-height: 540px; display: flex; flex-direction: column; border: 1px solid var(--color-border); box-shadow: var(--shadow-card);">
@@ -49,7 +49,7 @@ export function createChatbotView() {
                   💬
                 </div>
                 <div>
-                  <h3 style="color: #FFFFFF; font-size: 1.05rem; font-weight: 600; margin: 0;">CareBot Support Assistant</h3>
+                  <h3 style="color: #FFFFFF; font-size: 1.05rem; font-weight: 600; margin: 0;">UniVerse Support Assistant</h3>
                   <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94A3B8;">
                     <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10B981;"></span>
                     Automated Facility Support

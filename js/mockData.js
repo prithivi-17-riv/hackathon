@@ -88,7 +88,7 @@ export const INITIAL_COMPLAINTS = [
     resolutionProof: null,
     timeline: [
       { step: 'Submitted', title: 'Complaint Registered', description: 'Student submitted issue with photo evidence.', actor: 'Aarav Sharma', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString() },
-      { step: 'Acknowledged', title: 'Triaged by Warden AI', description: 'Priority upgraded to High due to hallway hazard.', actor: 'CampusCare AI', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+      { step: 'Acknowledged', title: 'Triaged by Warden AI', description: 'Priority upgraded to High due to hallway hazard.', actor: 'UniVerse AI', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
       { step: 'Assigned', title: 'Assigned to HVAC Team', description: 'Work order dispatched to Suresh Kumar.', actor: 'Admin Desk', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString() },
       { step: 'In Progress', title: 'Technician on Site', description: 'Inspecting evaporator drain pipe.', actor: 'Suresh Kumar', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() }
     ],

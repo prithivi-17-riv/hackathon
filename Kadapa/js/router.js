@@ -15,7 +15,7 @@ class Router {
     this.routes[path] = {
       handler: viewHandler,
       allowedRoles: options.allowedRoles || ['student', 'admin', 'staff', 'guest'],
-      title: options.title || 'CampusCare'
+      title: options.title || 'UniVerse'
     };
   }
 
@@ -107,7 +107,7 @@ class Router {
     }
 
     // Set Document Title
-    document.title = `${route?.title || 'Smart Complaint System'} | CampusCare`;
+    document.title = `${route?.title || 'Smart Complaint System'} | UniVerse`;
 
     // Render View Container
     const mainContainer = document.getElementById('main-content');

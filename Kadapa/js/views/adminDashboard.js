@@ -24,7 +24,7 @@ export function createAdminDashboardView() {
         sortByPriority: sortBy === 'priority'
       });
 
-      let complaints = res.data;
+      let complaints = res?.data || [];
 
       // Search filtering
       if (searchQuery.trim()) {
@@ -43,8 +43,8 @@ export function createAdminDashboardView() {
       }
 
       const totalActive = complaints.filter(c => c.status !== 'Resolved').length;
-      const criticalCount = complaints.filter(c => c.priorityMetrics.tier === 'Critical').length;
-      const highCount = complaints.filter(c => c.priorityMetrics.tier === 'High').length;
+      const criticalCount = complaints.filter(c => c.priorityMetrics?.tier === 'Critical').length;
+      const highCount = complaints.filter(c => c.priorityMetrics?.tier === 'High').length;
       const totalTickets = complaints.length;
       const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
 
@@ -58,7 +58,7 @@ export function createAdminDashboardView() {
                   <div class="brand-icon" style="width: 32px; height: 32px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                   </div>
-                  <span class="brand-title" style="font-size: 1.15rem;">Campus<span>Care</span></span>
+                  <span class="brand-title" style="font-size: 1.15rem;">Uni<span>Verse</span></span>
                 </div>
                 <div class="sidebar-role-tag">Admin Console</div>
                 <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 6px;">
@@ -222,8 +222,9 @@ export function createAdminDashboardView() {
                       </td>
                     </tr>
                   ` : complaints.map(c => {
-                    const p = c.priorityMetrics;
-                    const statusClass = c.status.toLowerCase().replace(/\s+/g, '-');
+                    const p = c.priorityMetrics || { tier: 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+                    const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
+                    const statusClass = (c.status || 'Submitted').toLowerCase().replace(/\s+/g, '-');
 
                     return `
                       <tr>
@@ -232,13 +233,13 @@ export function createAdminDashboardView() {
                           <a href="#/admin/complaints/${c.id}" style="font-weight: 800; color: var(--color-secondary);">
                             #${c.id}
                           </a>
-                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt).toLocaleDateString()}</div>
+                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt || Date.now()).toLocaleDateString()}</div>
                         </td>
 
                         <!-- AI Priority Badge with score breakdown -->
                         <td>
-                          <span class="badge ${p.badgeClass}" title="Score factors: Keywords (${p.factors.keywordScore}) + Wait (${p.factors.waitScore}) + Upvotes (${p.factors.upvoteScore}) + Hazard (${p.factors.categoryBase})">
-                            ${p.tier} • ${p.score} pts
+                          <span class="badge ${p.badgeClass || 'badge-medium'}" title="Score factors: Keywords (${factors.keywordScore || 0}) + Wait (${factors.waitScore || 0}) + Upvotes (${factors.upvoteScore || 0}) + Hazard (${factors.categoryBase || 0})">
+                            ${p.tier || 'Medium'} • ${p.score || 50} pts
                           </span>
                         </td>
 

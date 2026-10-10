@@ -15,7 +15,7 @@ export function createLandingView() {
               Campus Operations & Facilities Management
             </div>
             <h1 style="font-size: 2.1rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 8px; letter-spacing: -0.02em;">
-              Sign In to <span style="color: var(--color-primary);">CampusCare</span>
+              Sign In to <span style="color: var(--color-primary);">UniVerse</span>
             </h1>
             <p style="font-size: 0.925rem; color: var(--color-text-muted); max-width: 420px; margin: 0 auto;">
               Centralized complaint tracking, intelligent duplicate resolution, and dispatch workflow.
@@ -65,6 +65,10 @@ export function createLandingView() {
         try {
           await stateManager.signIn({ email, password });
           const user = stateManager.getState().currentUser;
+
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
 
           if (user?.role === 'admin') router.navigate('/admin');
           else if (user?.role === 'staff') router.navigate('/staff');

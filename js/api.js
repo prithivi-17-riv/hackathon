@@ -324,7 +324,7 @@ export const api = {
 
           api.sendEmailNotification({
             to: currentUser.email || 'student@campus.edu',
-            subject: `CampusCare: Ticket #${ticketNumber} Logged Successfully`,
+            subject: `UniVerse: Ticket #${ticketNumber} Logged Successfully`,
             message: `Your issue "${payload.title}" has been registered.`
           });
 
@@ -375,7 +375,7 @@ export const api = {
 
     api.sendEmailNotification({
       to: newComplaint.submittedBy.email,
-      subject: `CampusCare: Ticket #${newComplaint.id} Logged Successfully`,
+      subject: `UniVerse: Ticket #${newComplaint.id} Logged Successfully`,
       message: `Your issue "${newComplaint.title}" has been registered.`
     });
 
@@ -658,7 +658,7 @@ export const api = {
     doc.setTextColor(212, 255, 0);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('CAMPUSCARE - AI SMART COMPLAINT AUDIT REPORT', 14, 18);
+    doc.text('UNIVERSE - AI SMART COMPLAINT AUDIT REPORT', 14, 18);
 
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
@@ -723,7 +723,7 @@ export const api = {
       });
     }
 
-    doc.save(`CampusCare-Complaint-Report-${Date.now()}.pdf`);
+    doc.save(`UniVerse-Complaint-Report-${Date.now()}.pdf`);
     return true;
   }
 };

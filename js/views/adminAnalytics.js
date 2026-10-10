@@ -23,7 +23,7 @@ export function createAdminAnalyticsView() {
                   <div class="brand-icon" style="width: 32px; height: 32px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                   </div>
-                  <span class="brand-title" style="font-size: 1.15rem;">Campus<span>Care</span></span>
+                  <span class="brand-title" style="font-size: 1.15rem;">Uni<span>Verse</span></span>
                 </div>
                 <div class="sidebar-role-tag">Analytics Engine</div>
                 <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 6px;">
