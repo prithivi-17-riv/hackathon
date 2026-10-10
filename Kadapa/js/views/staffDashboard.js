@@ -52,9 +52,13 @@ export function createStaffDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
                 <button class="btn btn-primary btn-sm" id="staff-refresh-queue-btn">
                   Refresh Tickets
+                </button>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="staff-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
                 </button>
               </div>
             </div>

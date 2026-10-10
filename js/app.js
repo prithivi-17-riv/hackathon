@@ -22,8 +22,21 @@ class App {
   constructor() {
     this.initToastSystem();
     this.initEmailListener();
+    this.initGlobalAuthListeners();
     this.registerRoutes();
     this.renderShell();
+  }
+
+  initGlobalAuthListeners() {
+    document.addEventListener('click', async (e) => {
+      const signoutBtn = e.target.closest('[data-action="signout"], #signout-btn, .btn-signout');
+      if (signoutBtn) {
+        e.preventDefault();
+        await stateManager.signOut();
+        this.renderShell();
+        router.navigate('/login');
+      }
+    });
   }
 
   registerRoutes() {
@@ -191,12 +204,12 @@ class App {
 // Reliable Bootstrap on DOM ready or immediate if already interactive
 function bootstrapApp() {
   try {
-    new App();
+    const app = new App();
     router.handleRoute();
 
     // Subscribe to state updates to update shell if role changes
     stateManager.subscribe(() => {
-      // Reactively refresh active views
+      app.renderShell();
     });
   } catch (err) {
     console.error('Fatal initialization error:', err);

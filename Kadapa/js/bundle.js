@@ -1772,7 +1772,16 @@ function createDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                ${isStaffOrAdmin ? `
+                  <a href="${role === 'admin' ? '#/admin' : '#/staff'}" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.15); color: #FFFFFF; border-color: rgba(255,255,255,0.3);">
+                    ${role === 'admin' ? '🏛️ Admin Console' : '👨‍🔧 Staff Console'}
+                  </a>
+                  <button class="btn btn-outline btn-lg btn-signout" data-action="signout" style="background: rgba(239,68,68,0.2); color: #FCA5A5; border-color: rgba(239,68,68,0.4); display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Sign Out
+                  </button>
+                ` : ''}
                 <a href="#/complaints/new" class="btn btn-primary btn-lg">
                   Report an Issue
                 </a>
@@ -3207,9 +3216,13 @@ function createAdminDashboardView() {
               </ul>
             </div>
 
-            <div style="padding-top: 20px; border-top: 1px solid var(--color-border);">
+            <div style="padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 8px;">
               <button class="btn btn-outline btn-sm w-full" id="admin-export-pdf-sidebar-btn" style="box-shadow: none;">
                 Export PDF Audit
+              </button>
+              <button class="btn btn-outline btn-sm w-full btn-signout" data-action="signout" id="admin-sidebar-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
               </button>
             </div>
           </aside>
@@ -3224,13 +3237,17 @@ function createAdminDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button class="btn btn-primary btn-sm" id="admin-export-report-btn">
                   Export PDF Report
                 </button>
                 <a href="#/admin/analytics" class="btn btn-secondary btn-sm">
                   View Recurring Issues
                 </a>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="admin-top-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
+                </button>
               </div>
             </div>
 
@@ -3520,9 +3537,13 @@ function createAdminAnalyticsView() {
               </ul>
             </div>
 
-            <div style="padding-top: 20px; border-top: 1px solid var(--color-border);">
+            <div style="padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 8px;">
               <button class="btn btn-outline btn-sm w-full" id="analytics-export-pdf-sidebar-btn">
                 Export Audit PDF
+              </button>
+              <button class="btn btn-outline btn-sm w-full btn-signout" data-action="signout" id="analytics-sidebar-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
               </button>
             </div>
           </aside>
@@ -3535,9 +3556,15 @@ function createAdminAnalyticsView() {
                 <p class="page-subtitle">Predictive maintenance alerts, failure recurrence clustering, and resolution performance</p>
               </div>
 
-              <button class="btn btn-primary btn-sm" id="analytics-export-pdf-btn">
-                Export Full PDF Report
-              </button>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-primary btn-sm" id="analytics-export-pdf-btn">
+                  Export Full PDF Report
+                </button>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="analytics-top-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
+                </button>
+              </div>
             </div>
 
             <!-- KPI Metric Cards -->
@@ -3759,8 +3786,12 @@ function createAdminComplaintDetailView(params) {
               <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
               <a href="#/admin" class="btn btn-outline btn-sm">← Back to Queue</a>
+              <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="admin-detail-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
+              </button>
             </div>
           </div>
 
@@ -3988,9 +4019,13 @@ function createStaffDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
                 <button class="btn btn-primary btn-sm" id="staff-refresh-queue-btn">
                   Refresh Tickets
+                </button>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="staff-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
                 </button>
               </div>
             </div>
@@ -4160,7 +4195,13 @@ function createStaffComplaintDetailView(params) {
               <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
             </div>
 
-            <a href="#/staff" class="btn btn-outline btn-sm">← Back to Staff Queue</a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <a href="#/staff" class="btn btn-outline btn-sm">← Back to Staff Queue</a>
+              <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="staff-detail-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
+              </button>
+            </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
@@ -4352,8 +4393,21 @@ class App {
   constructor() {
     this.initToastSystem();
     this.initEmailListener();
+    this.initGlobalAuthListeners();
     this.registerRoutes();
     this.renderShell();
+  }
+
+  initGlobalAuthListeners() {
+    document.addEventListener('click', async (e) => {
+      const signoutBtn = e.target.closest('[data-action="signout"], #signout-btn, .btn-signout');
+      if (signoutBtn) {
+        e.preventDefault();
+        await stateManager.signOut();
+        this.renderShell();
+        router.navigate('/login');
+      }
+    });
   }
 
   registerRoutes() {
@@ -4521,12 +4575,12 @@ class App {
 // Reliable Bootstrap on DOM ready or immediate if already interactive
 function bootstrapApp() {
   try {
-    new App();
+    const app = new App();
     router.handleRoute();
 
     // Subscribe to state updates to update shell if role changes
     stateManager.subscribe(() => {
-      // Reactively refresh active views
+      app.renderShell();
     });
   } catch (err) {
     console.error('Fatal initialization error:', err);

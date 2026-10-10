@@ -85,9 +85,13 @@ export function createAdminDashboardView() {
               </ul>
             </div>
 
-            <div style="padding-top: 20px; border-top: 1px solid var(--color-border);">
+            <div style="padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 8px;">
               <button class="btn btn-outline btn-sm w-full" id="admin-export-pdf-sidebar-btn" style="box-shadow: none;">
                 Export PDF Audit
+              </button>
+              <button class="btn btn-outline btn-sm w-full btn-signout" data-action="signout" id="admin-sidebar-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
               </button>
             </div>
           </aside>
@@ -102,13 +106,17 @@ export function createAdminDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button class="btn btn-primary btn-sm" id="admin-export-report-btn">
                   Export PDF Report
                 </button>
                 <a href="#/admin/analytics" class="btn btn-secondary btn-sm">
                   View Recurring Issues
                 </a>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="admin-top-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
+                </button>
               </div>
             </div>
 

@@ -59,7 +59,16 @@ export function createDashboardView() {
                 </p>
               </div>
 
-              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                ${isStaffOrAdmin ? `
+                  <a href="${role === 'admin' ? '#/admin' : '#/staff'}" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.15); color: #FFFFFF; border-color: rgba(255,255,255,0.3);">
+                    ${role === 'admin' ? '🏛️ Admin Console' : '👨‍🔧 Staff Console'}
+                  </a>
+                  <button class="btn btn-outline btn-lg btn-signout" data-action="signout" style="background: rgba(239,68,68,0.2); color: #FCA5A5; border-color: rgba(239,68,68,0.4); display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Sign Out
+                  </button>
+                ` : ''}
                 <a href="#/complaints/new" class="btn btn-primary btn-lg">
                   Report an Issue
                 </a>

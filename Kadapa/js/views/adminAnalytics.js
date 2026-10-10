@@ -50,9 +50,13 @@ export function createAdminAnalyticsView() {
               </ul>
             </div>
 
-            <div style="padding-top: 20px; border-top: 1px solid var(--color-border);">
+            <div style="padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 8px;">
               <button class="btn btn-outline btn-sm w-full" id="analytics-export-pdf-sidebar-btn">
                 Export Audit PDF
+              </button>
+              <button class="btn btn-outline btn-sm w-full btn-signout" data-action="signout" id="analytics-sidebar-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
               </button>
             </div>
           </aside>
@@ -65,9 +69,15 @@ export function createAdminAnalyticsView() {
                 <p class="page-subtitle">Predictive maintenance alerts, failure recurrence clustering, and resolution performance</p>
               </div>
 
-              <button class="btn btn-primary btn-sm" id="analytics-export-pdf-btn">
-                Export Full PDF Report
-              </button>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-primary btn-sm" id="analytics-export-pdf-btn">
+                  Export Full PDF Report
+                </button>
+                <button class="btn btn-outline btn-sm btn-signout" data-action="signout" id="analytics-top-signout-btn" style="box-shadow: none; color: #DC2626; border-color: #FECACA; background: #FEF2F2; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign Out
+                </button>
+              </div>
             </div>
 
             <!-- KPI Metric Cards -->
