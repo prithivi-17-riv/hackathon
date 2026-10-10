@@ -13,6 +13,15 @@ const delay = (ms = 180) => new Promise(resolve => setTimeout(resolve, ms));
  * AI Smart Prioritization Scoring Algorithm
  */
 export function calculatePriorityScore(complaint) {
+  if (!complaint) {
+    return {
+      score: 10,
+      tier: 'Low',
+      badgeClass: 'badge-low',
+      factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 10 }
+    };
+  }
+
   const URGENCY_KEYWORDS = [
     { word: 'hazard', weight: 40 },
     { word: 'fire', weight: 50 },
@@ -39,20 +48,22 @@ export function calculatePriorityScore(complaint) {
     }
   });
 
-  const createdTime = new Date(complaint.createdAt || complaint.created_at || Date.now()).getTime();
+  const dateVal = complaint.createdAt || complaint.created_at;
+  const parsedTime = dateVal ? new Date(dateVal).getTime() : Date.now();
+  const createdTime = isNaN(parsedTime) ? Date.now() : parsedTime;
   const now = Date.now();
   const waitHours = Math.max(0, (now - createdTime) / (1000 * 60 * 60));
-  const isResolved = complaint.status === 'Resolved';
+  const isResolved = (complaint.status || '') === 'Resolved';
   const waitScore = isResolved ? 0 : Math.min(40, waitHours * 1.5);
 
-  const upvoteScore = Math.min(30, (complaint.upvotes || 0) * 4);
+  const upvoteScore = Math.min(30, (Number(complaint.upvotes) || 0) * 4);
 
   let categoryBase = 10;
   const catId = complaint.categoryId || complaint.category_id;
   if (catId === 'security' || catId === 'plumbing') categoryBase = 25;
   if (catId === 'hvac' || catId === 'electrical') categoryBase = 20;
 
-  const totalScore = Math.round(keywordScore + waitScore + upvoteScore + categoryBase);
+  const totalScore = Math.round((Number(keywordScore) || 0) + (Number(waitScore) || 0) + (Number(upvoteScore) || 0) + (Number(categoryBase) || 10));
 
   let tier = 'Low';
   let badgeClass = 'badge-low';
@@ -72,10 +83,10 @@ export function calculatePriorityScore(complaint) {
     tier,
     badgeClass,
     factors: {
-      keywordScore,
+      keywordScore: Math.round(keywordScore),
       waitScore: Math.round(waitScore),
-      upvoteScore,
-      categoryBase
+      upvoteScore: Math.round(upvoteScore),
+      categoryBase: Math.round(categoryBase)
     }
   };
 }
@@ -84,49 +95,49 @@ export function calculatePriorityScore(complaint) {
 function normalizeComplaintRow(row) {
   if (!row) return null;
   return {
-    id: row.ticket_number || row.id,
+    id: String(row.ticket_number || row.id || `CMP-${Math.floor(1000 + Math.random() * 9000)}`),
     dbId: row.id,
-    title: row.title,
-    description: row.description,
-    category: row.category,
-    categoryId: row.category_id,
-    location: row.location,
-    specificSpot: row.specific_spot,
-    status: row.status,
-    priority: row.priority,
-    upvotes: row.upvotes || 1,
-    upvotedBy: row.upvoted_by || [],
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    submittedBy: row.profiles ? {
-      id: row.profiles.id,
-      name: row.profiles.name,
-      email: row.profiles.email,
-      rollNo: row.profiles.roll_no
-    } : { name: 'Student', email: 'student@campus.edu' },
-    assignedTo: row.assigned_profile ? {
-      id: row.assigned_profile.id,
-      name: row.assigned_profile.name,
-      department: row.assigned_profile.department
-    } : null,
-    estimatedResolutionTime: row.estimated_resolution_time,
-    photoUrl: row.photo_url,
-    audioUrl: row.audio_url || null,
-    resolutionProof: row.resolution_proof,
-    timeline: (row.complaint_timeline || []).map(t => ({
-      step: t.step,
-      title: t.title,
-      description: t.description,
-      timestamp: t.timestamp,
-      actor: t.actor
-    })),
-    comments: (row.complaint_comments || []).map(c => ({
+    title: row.title || 'Untitled Complaint',
+    description: row.description || '',
+    category: row.category || 'General Maintenance',
+    categoryId: row.category_id || 'electrical',
+    location: row.location || 'Campus Facility',
+    specificSpot: row.specific_spot || '',
+    status: row.status || 'Submitted',
+    priority: row.priority || 'Medium',
+    upvotes: typeof row.upvotes === 'number' ? row.upvotes : (parseInt(row.upvotes, 10) || 1),
+    upvotedBy: Array.isArray(row.upvoted_by) ? row.upvoted_by : [],
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+    submittedBy: row.profiles && typeof row.profiles === 'object' ? {
+      id: row.profiles.id || '',
+      name: row.profiles.name || 'Student',
+      email: row.profiles.email || 'student@campus.edu',
+      rollNo: row.profiles.roll_no || ''
+    } : (row.submittedBy && typeof row.submittedBy === 'object' ? row.submittedBy : { id: 'usr_student_1', name: 'Student', email: 'student@campus.edu' }),
+    assignedTo: row.assigned_profile && typeof row.assigned_profile === 'object' ? {
+      id: row.assigned_profile.id || '',
+      name: row.assigned_profile.name || 'Assigned Staff',
+      department: row.assigned_profile.department || 'Maintenance'
+    } : (row.assignedTo && typeof row.assignedTo === 'object' ? row.assignedTo : (row.assigned_to ? { id: row.assigned_to, name: 'Assigned Staff', department: 'Maintenance' } : null)),
+    estimatedResolutionTime: row.estimated_resolution_time || '24-48 hours',
+    photoUrl: row.photo_url || row.photoUrl || null,
+    audioUrl: row.audio_url || row.audioUrl || null,
+    resolutionProof: row.resolution_proof || row.resolutionProof || null,
+    timeline: Array.isArray(row.complaint_timeline) ? row.complaint_timeline.map(t => ({
+      step: t.step || 'Submitted',
+      title: t.title || 'Update',
+      description: t.description || '',
+      timestamp: t.timestamp || new Date().toISOString(),
+      actor: t.actor || 'System'
+    })) : (Array.isArray(row.timeline) ? row.timeline : []),
+    comments: Array.isArray(row.complaint_comments) ? row.complaint_comments.map(c => ({
       id: c.id,
-      author: c.author_name,
-      role: c.role,
-      text: c.text,
-      timestamp: c.created_at
-    }))
+      author: c.author_name || c.author || 'User',
+      role: c.role || 'student',
+      text: c.text || '',
+      timestamp: c.created_at || c.timestamp || new Date().toISOString()
+    })) : (Array.isArray(row.comments) ? row.comments : [])
   };
 }
 
@@ -163,15 +174,15 @@ export const api = {
         const { data, error } = await query;
 
         if (!error && data && data.length > 0) {
-          let complaints = data.map(row => normalizeComplaintRow(row));
+          let complaints = data.map(row => normalizeComplaintRow(row)).filter(Boolean);
 
           // Merge local state complaints and upvotes so local toggles/tickets are never wiped out
-          const localComplaints = stateManager.getComplaints();
+          const localComplaints = stateManager.getComplaints().filter(Boolean);
           const remoteIds = new Set(complaints.map(c => c.id).concat(complaints.map(c => c.dbId)));
-          const localOnly = localComplaints.filter(l => !remoteIds.has(l.id) && !remoteIds.has(l.dbId));
+          const localOnly = localComplaints.filter(l => l && !remoteIds.has(l.id) && !remoteIds.has(l.dbId));
 
           complaints = complaints.map(c => {
-            const local = localComplaints.find(l => l.id === c.id || l.dbId === c.id || l.id === c.dbId);
+            const local = localComplaints.find(l => l && (l.id === c.id || l.dbId === c.id || l.id === c.dbId));
             if (local && Array.isArray(local.upvotedBy)) {
               return {
                 ...c,
@@ -191,9 +202,9 @@ export const api = {
           }));
 
           if (filter.sortByPriority) {
-            complaints.sort((a, b) => b.priorityMetrics.score - a.priorityMetrics.score);
+            complaints.sort((a, b) => (b.priorityMetrics?.score || 0) - (a.priorityMetrics?.score || 0));
           } else {
-            complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
           }
 
           stateManager.setComplaints(complaints);
@@ -206,7 +217,7 @@ export const api = {
 
     // Local state fallback
     await delay();
-    let complaints = [...stateManager.getComplaints()];
+    let complaints = [...stateManager.getComplaints()].filter(Boolean);
 
     complaints = complaints.map(c => ({
       ...c,
@@ -214,22 +225,25 @@ export const api = {
     }));
 
     if (filter.status && filter.status !== 'All') {
-      complaints = complaints.filter(c => c.status === filter.status);
+      complaints = complaints.filter(c => c && c.status === filter.status);
     }
     if (filter.category && filter.category !== 'All') {
-      complaints = complaints.filter(c => c.category === filter.category || c.categoryId === filter.category);
+      complaints = complaints.filter(c => c && (c.category === filter.category || c.categoryId === filter.category));
     }
     if (filter.location && filter.location !== 'All') {
-      complaints = complaints.filter(c => c.location === filter.location);
+      complaints = complaints.filter(c => c && c.location === filter.location);
     }
     if (filter.assignedTo) {
-      complaints = complaints.filter(c => c.assignedTo && c.assignedTo.id === filter.assignedTo);
+      complaints = complaints.filter(c => c && (
+        (c.assignedTo && typeof c.assignedTo === 'object' && c.assignedTo.id === filter.assignedTo) ||
+        c.assignedTo === filter.assignedTo
+      ));
     }
 
     if (filter.sortByPriority) {
-      complaints.sort((a, b) => b.priorityMetrics.score - a.priorityMetrics.score);
+      complaints.sort((a, b) => (b.priorityMetrics?.score || 0) - (a.priorityMetrics?.score || 0));
     } else {
-      complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     }
 
     return { success: true, data: complaints, count: complaints.length };
@@ -554,17 +568,18 @@ export const api = {
    */
   async findDuplicates(categoryId, location, titleQuery = '') {
     const res = await api.getComplaints();
-    const complaints = (res.data || []).filter(c => c.status !== 'Resolved' && c.status !== 'Rejected');
+    const complaints = (res?.data || []).filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected');
 
     const duplicates = complaints.filter(c => {
-      const sameLocation = c.location && location && c.location.toLowerCase().includes(location.toLowerCase());
-      const sameCategory = c.categoryId === categoryId || (c.category && categoryId && c.category.toLowerCase().includes(categoryId.toLowerCase()));
+      if (!c) return false;
+      const sameLocation = c.location && location && String(c.location).toLowerCase().includes(String(location).toLowerCase());
+      const sameCategory = c.categoryId === categoryId || (c.category && categoryId && String(c.category).toLowerCase().includes(String(categoryId).toLowerCase()));
 
       if (sameLocation && sameCategory) return true;
 
       if (titleQuery && titleQuery.length > 5) {
         const words = titleQuery.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-        const matchCount = words.filter(w => c.title.toLowerCase().includes(w)).length;
+        const matchCount = words.filter(w => String(c.title || '').toLowerCase().includes(w)).length;
         if (matchCount >= 2 && sameLocation) return true;
       }
       return false;
@@ -593,18 +608,20 @@ export const api = {
    */
   async getAnalyticsData() {
     const res = await api.getComplaints();
-    const complaints = res.data || [];
+    const complaints = (res?.data || []).filter(Boolean);
 
     const total = complaints.length;
-    const resolved = complaints.filter(c => c.status === 'Resolved').length;
-    const inProgress = complaints.filter(c => c.status === 'In Progress' || c.status === 'Assigned').length;
-    const pending = complaints.filter(c => c.status === 'Submitted' || c.status === 'Acknowledged').length;
+    const resolved = complaints.filter(c => (c.status || '') === 'Resolved').length;
+    const inProgress = complaints.filter(c => (c.status || '') === 'In Progress' || (c.status || '') === 'Assigned').length;
+    const pending = complaints.filter(c => (c.status || '') === 'Submitted' || (c.status || '') === 'Acknowledged').length;
 
     const clusterMap = {};
     complaints.forEach(c => {
-      const key = `${c.location}__${c.category}`;
+      const loc = c.location || 'Campus Facilities';
+      const cat = c.category || 'General';
+      const key = `${loc}__${cat}`;
       if (!clusterMap[key]) {
-        clusterMap[key] = { location: c.location, category: c.category, count: 0, complaints: [] };
+        clusterMap[key] = { location: loc, category: cat, count: 0, complaints: [] };
       }
       clusterMap[key].count += 1;
       clusterMap[key].complaints.push(c);
@@ -620,7 +637,8 @@ export const api = {
 
     const categoryCounts = {};
     complaints.forEach(c => {
-      categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+      const cat = c.category || 'General';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     });
 
     return {

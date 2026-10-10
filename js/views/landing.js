@@ -41,6 +41,24 @@ export function createLandingView() {
               <div style="text-align: center; margin-top: 16px; font-size: 0.85rem; color: var(--color-text-muted);">
                 Don't have an account? <a href="#/signup" style="font-weight: 600;">Register as Student</a>
               </div>
+
+              <!-- Quick Demo Access for Hackathon Judges & Evaluators -->
+              <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border); text-align: center;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                  ⚡ Quick Demo Portals
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="student" style="font-size: 0.78rem; padding: 5px 10px;">
+                    🎓 Student
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="staff" style="font-size: 0.78rem; padding: 5px 10px;">
+                    👨‍🔧 Staff
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="admin" style="font-size: 0.78rem; padding: 5px 10px;">
+                    🏛️ Admin
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -48,6 +66,27 @@ export function createLandingView() {
     },
 
     onMount() {
+      // Quick Demo Switcher
+      document.querySelectorAll('.quick-demo-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.getAttribute('data-demo-role');
+          const state = stateManager.getState();
+          const target = (state.users || []).find(u => u.role === role) || {
+            role,
+            name: role === 'admin' ? 'Dr. Ramesh Patel' : (role === 'staff' ? 'Suresh Kumar' : 'Aarav Sharma'),
+            email: role === 'admin' ? 'warden.cauvery@campus.edu' : (role === 'staff' ? 'suresh.maintenance@campus.edu' : 'aarav.sharma@campus.edu'),
+            id: role === 'admin' ? 'usr_admin_1' : (role === 'staff' ? 'usr_staff_1' : 'usr_student_1')
+          };
+          stateManager.setCurrentUser(target);
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
+          if (role === 'admin') router.navigate('/admin');
+          else if (role === 'staff') router.navigate('/staff');
+          else router.navigate('/dashboard');
+        });
+      });
+
       document.getElementById('custom-login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('login-submit-btn');

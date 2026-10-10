@@ -30,23 +30,25 @@ export function createAdminDashboardView() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         complaints = complaints.filter(c =>
-          c.title.toLowerCase().includes(q) ||
-          c.location.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q)
+          c && (
+            String(c.title || '').toLowerCase().includes(q) ||
+            String(c.location || '').toLowerCase().includes(q) ||
+            String(c.id || '').toLowerCase().includes(q)
+          )
         );
       }
 
       if (sortBy === 'date') {
-        complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       } else if (sortBy === 'upvotes') {
-        complaints.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+        complaints.sort((a, b) => (Number(b.upvotes) || 0) - (Number(a.upvotes) || 0));
       }
 
-      const totalActive = complaints.filter(c => c.status !== 'Resolved').length;
-      const criticalCount = complaints.filter(c => c.priorityMetrics?.tier === 'Critical').length;
-      const highCount = complaints.filter(c => c.priorityMetrics?.tier === 'High').length;
+      const totalActive = complaints.filter(c => c && (c.status || '') !== 'Resolved').length;
+      const criticalCount = complaints.filter(c => c && (c.priorityMetrics?.tier === 'Critical' || (c.priority || '') === 'Critical')).length;
+      const highCount = complaints.filter(c => c && (c.priorityMetrics?.tier === 'High' || (c.priority || '') === 'High')).length;
       const totalTickets = complaints.length;
-      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+      const resolvedCount = complaints.filter(c => c && (c.status || '') === 'Resolved').length;
 
       return `
         <div class="admin-layout-container">
@@ -222,9 +224,21 @@ export function createAdminDashboardView() {
                       </td>
                     </tr>
                   ` : complaints.map(c => {
-                    const p = c.priorityMetrics || { tier: 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+                    if (!c) return '';
+                    const p = c.priorityMetrics || { tier: c.priority || 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
                     const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
-                    const statusClass = (c.status || 'Submitted').toLowerCase().replace(/\s+/g, '-');
+                    const statusStr = c.status || 'Submitted';
+                    const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+                    const assignedName = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.name || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+                    const assignedId = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.id || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+
+                    let formattedDate = 'Recent';
+                    if (c.createdAt) {
+                      try {
+                        const d = new Date(c.createdAt);
+                        if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString();
+                      } catch (_) {}
+                    }
 
                     return `
                       <tr>
@@ -233,7 +247,7 @@ export function createAdminDashboardView() {
                           <a href="#/admin/complaints/${c.id}" style="font-weight: 800; color: var(--color-secondary);">
                             #${c.id}
                           </a>
-                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt || Date.now()).toLocaleDateString()}</div>
+                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${formattedDate}</div>
                         </td>
 
                         <!-- AI Priority Badge with score breakdown -->
@@ -246,34 +260,34 @@ export function createAdminDashboardView() {
                         <!-- Issue Details -->
                         <td>
                           <div style="font-weight: 700; color: var(--color-secondary); margin-bottom: 2px;">
-                            <a href="#/admin/complaints/${c.id}" style="color: inherit;">${c.title}</a>
+                            <a href="#/admin/complaints/${c.id}" style="color: inherit;">${c.title || 'Untitled Issue'}</a>
                           </div>
                           <div style="font-size: 0.785rem; color: var(--color-text-muted);">
-                            📍 <strong>${c.location}</strong> • <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${c.category}</span>
+                            📍 <strong>${c.location || 'Campus'}</strong> • <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${c.category || 'General'}</span>
                           </div>
                         </td>
 
                         <!-- Status Badge -->
                         <td>
                           <span class="badge badge-${statusClass}">
-                            ● ${c.status}
+                            ● ${statusStr}
                           </span>
                         </td>
 
                         <!-- Upvotes -->
                         <td>
                           <span style="font-weight: 800; font-size: 0.9rem; color: var(--color-secondary);">
-                            ▲ ${c.upvotes || 0}
+                            ▲ ${Number(c.upvotes) || 0}
                           </span>
                         </td>
 
                         <!-- Quick Assign Technician Dropdown -->
                         <td>
                           <select class="form-control quick-assign-dropdown" data-complaint-id="${c.id}" style="padding: 4px 8px; font-size: 0.8rem; width: auto;">
-                            <option value="">${c.assignedTo ? `👨‍🔧 ${c.assignedTo.name}` : '⚡ Quick Assign...'}</option>
+                            <option value="">${assignedName ? `👨‍🔧 ${assignedName}` : '⚡ Quick Assign...'}</option>
                             ${staffList.map(s => `
-                              <option value="${s.id}" ${c.assignedTo?.id === s.id ? 'selected' : ''}>
-                                ${s.name} (${s.department.split('&')[0]})
+                              <option value="${s.id}" ${(assignedId === s.id) ? 'selected' : ''}>
+                                ${s.name} (${String(s.department || 'Maintenance').split('&')[0].trim()})
                               </option>
                             `).join('')}
                           </select>

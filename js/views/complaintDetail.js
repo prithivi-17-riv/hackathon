@@ -25,11 +25,14 @@ export function createComplaintDetailView(params) {
       }
 
       const currentUser = stateManager.getState().currentUser || { id: 'usr_student_1', name: 'Student' };
-      const hasUpvoted = complaint.upvotedBy && complaint.upvotedBy.includes(currentUser.id);
+      const hasUpvoted = Array.isArray(complaint.upvotedBy) && Boolean(currentUser?.id) && complaint.upvotedBy.includes(currentUser.id);
       
       const TRACKING_STEPS = ['Submitted', 'Acknowledged', 'Assigned', 'In Progress', 'Resolved'];
-      const currentStepIdx = TRACKING_STEPS.indexOf(complaint.status);
-      const isResolved = complaint.status === 'Resolved';
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', score: 50, badgeClass: 'badge-medium' };
+      const currentStepIdx = TRACKING_STEPS.indexOf(statusStr);
+      const isResolved = statusStr === 'Resolved';
 
       return `
         <div class="page-container" style="max-width: 960px;">
@@ -43,21 +46,21 @@ export function createComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                <span class="badge ${complaint.priorityMetrics.badgeClass}">
-                  ${complaint.priorityMetrics.tier} Priority (${complaint.priorityMetrics.score} pts)
+                <span class="badge ${p.badgeClass || 'badge-medium'}">
+                  ${p.tier || 'Medium'} Priority (${p.score || 50} pts)
                 </span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">
-                  ● ${complaint.status}
+                <span class="badge badge-${statusClass}">
+                  ● ${statusStr}
                 </span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.75rem;">${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.75rem;">${complaint.title || 'Untitled Issue'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               <button class="upvote-btn ${hasUpvoted ? 'upvoted' : ''}" id="detail-upvote-btn" style="padding: 8px 16px;">
                 <span>▲</span>
-                <span class="upvote-count">${complaint.upvotes || 0}</span>
+                <span class="upvote-count">${Number(complaint.upvotes) || 0}</span>
                 <span>${hasUpvoted ? 'Upvoted' : 'Upvote Issue'}</span>
               </button>
               <a href="#/dashboard" class="btn btn-outline btn-sm">← Back</a>
@@ -110,7 +113,7 @@ export function createComplaintDetailView(params) {
                   </div>
                   <div>
                     <span style="color: var(--color-text-muted);">Assigned Technician:</span>
-                    <div style="font-weight: 700; color: #4F46E5;">${complaint.assignedTo ? complaint.assignedTo.name : 'Awaiting Assignment'}</div>
+                    <div style="font-weight: 700; color: #4F46E5;">${(complaint.assignedTo && typeof complaint.assignedTo === 'object') ? (complaint.assignedTo.name || 'Assigned Staff') : (complaint.assignedTo || 'Awaiting Assignment')}</div>
                   </div>
                 </div>
               </div>

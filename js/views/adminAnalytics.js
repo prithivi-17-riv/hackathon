@@ -9,9 +9,11 @@ export function createAdminAnalyticsView() {
     async render() {
       const state = stateManager.getState();
       const adminUser = state.currentUser || { name: 'Admin' };
-      const analytics = await api.getAnalyticsData();
+      const analytics = (await api.getAnalyticsData()) || {};
 
-      const { summary, recurringIssues, categoryCounts } = analytics;
+      const summary = analytics.summary || { total: 0, resolved: 0, inProgress: 0, pending: 0, resolutionRate: 0, avgResolutionHours: 18.5 };
+      const recurringIssues = Array.isArray(analytics.recurringIssues) ? analytics.recurringIssues : [];
+      const categoryCounts = analytics.categoryCounts || {};
 
       return `
         <div class="admin-layout-container">
@@ -153,7 +155,7 @@ export function createAdminAnalyticsView() {
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                       ${cluster.complaints.map(c => `
                         <a href="#/admin/complaints/${c.id}" class="badge" style="background: #FFFFFF; color: #991B1B; border-color: #F87171; text-transform: none;">
-                          #${c.id}: ${c.title.substring(0, 24)}...
+                          #${c.id}: ${String(c.title || 'Issue').substring(0, 24)}...
                         </a>
                       `).join('')}
                     </div>
@@ -173,7 +175,7 @@ export function createAdminAnalyticsView() {
 
                 <div style="display: flex; flex-direction: column; gap: 14px;">
                   ${Object.entries(categoryCounts).map(([cat, count]) => {
-                    const pct = Math.round((count / summary.total) * 100);
+                    const pct = summary.total > 0 ? Math.round((count / summary.total) * 100) : 0;
                     return `
                       <div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">
@@ -202,7 +204,7 @@ export function createAdminAnalyticsView() {
                       <span>${summary.resolved}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.resolved / summary.total) * 100)}%; background: #10B981;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.resolved / summary.total) * 100) : 0}%; background: #10B981;"></div>
                     </div>
                   </div>
 
@@ -212,7 +214,7 @@ export function createAdminAnalyticsView() {
                       <span>${summary.inProgress}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.inProgress / summary.total) * 100)}%; background: #8B5CF6;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.inProgress / summary.total) * 100) : 0}%; background: #8B5CF6;"></div>
                     </div>
                   </div>
 
@@ -222,7 +224,7 @@ export function createAdminAnalyticsView() {
                       <span>${summary.pending}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.pending / summary.total) * 100)}%; background: #F59E0B;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.pending / summary.total) * 100) : 0}%; background: #F59E0B;"></div>
                     </div>
                   </div>
                 </div>

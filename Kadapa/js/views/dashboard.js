@@ -12,35 +12,49 @@ export function createDashboardView() {
   return {
     async render() {
       const state = stateManager.getState();
-      const user = state.currentUser || { id: 'usr_student_1', name: 'Student', hostel: 'Campus Student', role: 'student' };
+      const user = state.currentUser || { id: 'usr_student_1', name: 'Student', hostel: 'Campus Student', role: 'student', email: 'student@campus.edu' };
       const role = (user.role || state.currentRole || 'student').toLowerCase();
       const isStaffOrAdmin = role === 'admin' || role === 'staff' || role === 'teacher' || role === 'faculty';
       const res = await api.getComplaints();
-      const complaints = res.data || [];
+      const complaints = (res && Array.isArray(res.data)) ? res.data : [];
 
-      const myComplaints = complaints.filter(c => c.submittedBy?.email === user.email);
-      const activeCount = complaints.filter(c => c.status !== 'Resolved' && c.status !== 'Rejected').length;
-      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+      const userEmail = user.email || '';
+      const userId = user.id || '';
+      const myComplaints = complaints.filter(c => {
+        if (!c) return false;
+        if (userEmail && c.submittedBy?.email === userEmail) return true;
+        if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+        return false;
+      });
+      const activeCount = complaints.filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected').length;
+      const resolvedCount = complaints.filter(c => c && (c.status || '') === 'Resolved').length;
 
       // Filter complaints based on activeTab & search
       let filtered = [...complaints];
       if (activeTab === 'My Complaints') {
-        filtered = filtered.filter(c => c.submittedBy?.email === user.email);
+        filtered = filtered.filter(c => {
+          if (!c) return false;
+          if (userEmail && c.submittedBy?.email === userEmail) return true;
+          if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+          return false;
+        });
       } else if (activeTab === 'In Progress') {
-        filtered = filtered.filter(c => c.status === 'In Progress' || c.status === 'Assigned');
+        filtered = filtered.filter(c => c && ((c.status || '') === 'In Progress' || (c.status || '') === 'Assigned'));
       } else if (activeTab === 'Resolved') {
-        filtered = filtered.filter(c => c.status === 'Resolved');
+        filtered = filtered.filter(c => c && (c.status || '') === 'Resolved');
       } else if (activeTab === 'Critical') {
-        filtered = filtered.filter(c => c.priority === 'Critical');
+        filtered = filtered.filter(c => c && ((c.priority || '') === 'Critical' || c.priorityMetrics?.tier === 'Critical'));
       }
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         filtered = filtered.filter(c => 
-          c.title.toLowerCase().includes(q) ||
-          c.location.toLowerCase().includes(q) ||
-          c.category.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q)
+          c && (
+            String(c.title || '').toLowerCase().includes(q) ||
+            String(c.location || '').toLowerCase().includes(q) ||
+            String(c.category || '').toLowerCase().includes(q) ||
+            String(c.id || '').toLowerCase().includes(q)
+          )
         );
       }
 
@@ -141,9 +155,22 @@ export function createDashboardView() {
                 <a href="#/complaints/new" class="btn btn-primary btn-sm">Report New Issue</a>
               </div>
             ` : filtered.map(c => {
-              const hasUpvoted = c.upvotedBy && c.upvotedBy.includes(user.id);
-              const statusClass = c.status.toLowerCase().replace(/\s+/g, '-');
-              const priorityClass = c.priority.toLowerCase();
+              if (!c) return '';
+              const hasUpvoted = Array.isArray(c.upvotedBy) && Boolean(user?.id) && c.upvotedBy.includes(user.id);
+              const statusStr = c.status || 'Submitted';
+              const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+              const priorityStr = c.priority || c.priorityMetrics?.tier || 'Medium';
+              const priorityClass = priorityStr.toLowerCase();
+              const categoryStr = c.category || 'General';
+              const assignedName = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.name || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+
+              let formattedDate = 'Recent';
+              if (c.createdAt) {
+                try {
+                  const d = new Date(c.createdAt);
+                  if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString();
+                } catch (_) {}
+              }
 
               return `
                 <div class="card card-hoverable" style="padding: 20px;" data-complaint-id="${c.id}">
@@ -151,26 +178,26 @@ export function createDashboardView() {
                     <div style="flex: 1; min-width: 260px;">
                       <!-- Header Badges -->
                       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <span class="badge badge-${statusClass}">● ${c.status}</span>
-                        <span class="badge badge-${priorityClass}">${c.priority} Priority</span>
-                        <span class="badge badge-category">${c.category}</span>
+                        <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                        <span class="badge badge-${priorityClass}">${priorityStr} Priority</span>
+                        <span class="badge badge-category">${categoryStr}</span>
                         ${c.audioUrl ? `<span class="badge" style="background: #EFF6FF; color: var(--color-primary); border: 1px solid #BFDBFE; font-size: 0.72rem;">🎙️ Audio</span>` : ''}
                         <span style="font-size: 0.75rem; color: var(--color-text-light); font-weight: 700;">#${c.id}</span>
                       </div>
 
                       <!-- Title & Location -->
                       <h3 style="font-size: 1.15rem; color: var(--color-secondary); margin-bottom: 6px;">
-                        <a href="#/complaints/${c.id}" style="color: inherit; text-decoration: none;">${c.title}</a>
+                        <a href="#/complaints/${c.id}" style="color: inherit; text-decoration: none;">${c.title || 'Untitled Complaint'}</a>
                       </h3>
                       
                       <div style="display: flex; align-items: center; gap: 12px; font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                        <span>📍 <strong>${c.location}</strong> ${c.specificSpot ? `• ${c.specificSpot}` : ''}</span>
-                        <span>🕒 Logged ${new Date(c.createdAt).toLocaleDateString()}</span>
-                        ${c.assignedTo ? `<span style="color: #4F46E5;">👨‍🔧 Assigned: ${c.assignedTo.name}</span>` : ''}
+                        <span>📍 <strong>${c.location || 'Campus'}</strong> ${c.specificSpot ? `• ${c.specificSpot}` : ''}</span>
+                        <span>🕒 Logged ${formattedDate}</span>
+                        ${assignedName ? `<span style="color: #4F46E5;">👨‍🔧 Assigned: ${assignedName}</span>` : ''}
                       </div>
 
                       <p style="font-size: 0.88rem; color: var(--color-text-main); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 14px;">
-                        ${c.description}
+                        ${c.description || ''}
                       </p>
                     </div>
 
@@ -178,7 +205,7 @@ export function createDashboardView() {
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
                       <button class="upvote-btn ${hasUpvoted ? 'upvoted' : ''}" data-upvote-id="${c.id}">
                         <span>▲</span>
-                        <span class="upvote-count">${c.upvotes || 0}</span>
+                        <span class="upvote-count">${Number(c.upvotes) || 0}</span>
                         <span>${hasUpvoted ? 'Upvoted' : 'Upvote'}</span>
                       </button>
 

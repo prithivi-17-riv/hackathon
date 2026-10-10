@@ -23,8 +23,13 @@ export function createStaffComplaintDetailView(params) {
         `;
       }
 
-      const isResolved = complaint.status === 'Resolved';
-      const isInProgress = complaint.status === 'In Progress';
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+      const isResolved = statusStr === 'Resolved';
+      const isInProgress = statusStr === 'In Progress';
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', badgeClass: 'badge-medium' };
+      const tier = p.tier || complaint.priority || 'Medium';
+      const badgeClass = p.badgeClass || 'badge-medium';
 
       return `
         <div class="page-container" style="max-width: 960px;">
@@ -38,11 +43,11 @@ export function createStaffComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span class="badge ${complaint.priorityMetrics.badgeClass}">${complaint.priorityMetrics.tier} Priority</span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">● ${complaint.status}</span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge ${badgeClass}">${tier} Priority</span>
+                <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title || 'Untitled Work Order'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -61,7 +66,7 @@ export function createStaffComplaintDetailView(params) {
               <div class="card card-chunky" style="margin-bottom: 24px;">
                 <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Fault Information</h3>
                 <p style="font-size: 0.95rem; line-height: 1.5; color: var(--color-text-main); margin-bottom: 20px;">
-                  ${complaint.description}
+                  ${complaint.description || ''}
                 </p>
 
                 ${complaint.audioUrl ? `
@@ -83,13 +88,13 @@ export function createStaffComplaintDetailView(params) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; background: var(--color-bg-alt); padding: 14px; border-radius: var(--radius-md); border: 1.5px solid var(--color-border);">
                   <div>
                     <span style="color: var(--color-text-muted);">Exact Location:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.location}</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.location || 'Campus'}</strong>
                     <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.specificSpot || ''}</span>
                   </div>
                   <div>
                     <span style="color: var(--color-text-muted);">Contact Student:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name}</strong>
-                    <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.submittedBy?.email}</span>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name || 'Student'}</strong>
+                    <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.submittedBy?.email || ''}</span>
                   </div>
                 </div>
               </div>

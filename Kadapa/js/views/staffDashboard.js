@@ -14,27 +14,31 @@ export function createStaffDashboardView() {
       const staffUser = state.currentUser || { id: 'usr_staff_1', name: 'Suresh Kumar', department: 'Electrical & HVAC' };
       
       const res = await api.getComplaints();
-      const allComplaints = res.data;
+      const allComplaints = (res && Array.isArray(res.data)) ? res.data : [];
 
       // Filter to tickets assigned to this staff member or unassigned in their department
       let myTickets = allComplaints.filter(c => {
-        if (c.assignedTo && c.assignedTo.id === staffUser.id) return true;
+        if (!c) return false;
+        const assignedId = c.assignedTo && typeof c.assignedTo === 'object' ? c.assignedTo.id : c.assignedTo;
+        if (assignedId && (assignedId === staffUser.id || assignedId === staffUser.email)) return true;
         if (!c.assignedTo && c.category) {
-          return c.category.includes('Electrical') || c.category.includes('AC') || c.category.includes('HVAC');
+          const cat = String(c.category).toLowerCase();
+          const dept = String(staffUser.department || '').toLowerCase();
+          return cat.includes('electrical') || cat.includes('ac') || cat.includes('hvac') || dept.includes(cat);
         }
         return false;
       });
 
       if (statusTab === 'Active') {
-        myTickets = myTickets.filter(c => c.status === 'In Progress' || c.status === 'Assigned');
+        myTickets = myTickets.filter(c => c && ((c.status || '') === 'In Progress' || (c.status || '') === 'Assigned'));
       } else if (statusTab === 'Resolved') {
-        myTickets = myTickets.filter(c => c.status === 'Resolved');
+        myTickets = myTickets.filter(c => c && (c.status || '') === 'Resolved');
       }
 
-      const activeCount = myTickets.filter(c => c.status !== 'Resolved').length;
+      const activeCount = myTickets.filter(c => c && (c.status || '') !== 'Resolved').length;
       const totalTickets = allComplaints.length;
-      const totalActive = allComplaints.filter(c => c.status !== 'Resolved' && c.status !== 'Rejected').length;
-      const totalResolved = allComplaints.filter(c => c.status === 'Resolved').length;
+      const totalActive = allComplaints.filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected').length;
+      const totalResolved = allComplaints.filter(c => c && (c.status || '') === 'Resolved').length;
       const assignedCount = myTickets.length;
 
       return `
@@ -117,7 +121,14 @@ export function createStaffDashboardView() {
                 <p style="color: var(--color-text-muted);">No open work orders pending in your queue.</p>
               </div>
             ` : myTickets.map(ticket => {
-              const statusClass = ticket.status.toLowerCase().replace(/\s+/g, '-');
+              if (!ticket) return '';
+              const statusStr = ticket.status || 'Submitted';
+              const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+              const p = ticket.priorityMetrics || { tier: ticket.priority || 'Medium', badgeClass: 'badge-medium' };
+              const tier = p.tier || ticket.priority || 'Medium';
+              const badgeClass = p.badgeClass || 'badge-medium';
+              const studentName = ticket.submittedBy?.name || 'Student';
+              const studentInfo = ticket.submittedBy?.rollNo || ticket.submittedBy?.email || 'Hostel';
 
               return `
                 <div class="card card-hoverable" style="padding: 20px;">
@@ -125,23 +136,23 @@ export function createStaffDashboardView() {
                     
                     <div style="flex: 1; min-width: 280px;">
                       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <span class="badge badge-${statusClass}">● ${ticket.status}</span>
-                        <span class="badge ${ticket.priorityMetrics.badgeClass}">${ticket.priorityMetrics.tier} Priority</span>
-                        <span class="badge badge-category">${ticket.category}</span>
+                        <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                        <span class="badge ${badgeClass}">${tier} Priority</span>
+                        <span class="badge badge-category">${ticket.category || 'General'}</span>
                         <span style="font-size: 0.75rem; color: var(--color-text-light); font-weight: 700;">#${ticket.id}</span>
                       </div>
 
                       <h3 style="font-size: 1.15rem; color: var(--color-secondary); margin-bottom: 6px;">
-                        <a href="#/staff/complaints/${ticket.id}" style="color: inherit;">${ticket.title}</a>
+                        <a href="#/staff/complaints/${ticket.id}" style="color: inherit;">${ticket.title || 'Untitled Work Order'}</a>
                       </h3>
 
                       <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 10px;">
-                        📍 <strong>Location:</strong> ${ticket.location} (${ticket.specificSpot || 'General'}) • 
-                        👤 <strong>Student:</strong> ${ticket.submittedBy?.name} (${ticket.submittedBy?.rollNo || 'Hostel'})
+                        📍 <strong>Location:</strong> ${ticket.location || 'Campus'} (${ticket.specificSpot || 'General'}) • 
+                        👤 <strong>Student:</strong> ${studentName} (${studentInfo})
                       </div>
 
                       <p style="font-size: 0.88rem; color: var(--color-text-main); margin-bottom: 14px; line-height: 1.4;">
-                        ${ticket.description}
+                        ${ticket.description || ''}
                       </p>
 
                       ${ticket.resolutionProof ? `

@@ -24,8 +24,11 @@ export function createAdminComplaintDetailView(params) {
       }
 
       const state = stateManager.getState();
-      const staffList = state.users.filter(u => u.role === 'staff');
-      const p = complaint.priorityMetrics;
+      const staffList = (state.users || []).filter(u => u && u.role === 'staff');
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+      const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
 
       return `
         <div class="page-container" style="max-width: 980px;">
@@ -39,11 +42,11 @@ export function createAdminComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span class="badge ${p.badgeClass}">${p.tier} Priority (${p.score} pts)</span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">● ${complaint.status}</span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge ${p.badgeClass || 'badge-medium'}">${p.tier || 'Medium'} Priority (${p.score || 50} pts)</span>
+                <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title || 'Untitled Issue'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -62,7 +65,7 @@ export function createAdminComplaintDetailView(params) {
               <div class="card card-chunky" style="margin-bottom: 24px;">
                 <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Reported Details</h3>
                 <p style="font-size: 0.95rem; line-height: 1.5; color: var(--color-text-main); margin-bottom: 20px;">
-                  ${complaint.description}
+                  ${complaint.description || ''}
                 </p>
 
                 ${complaint.audioUrl ? `
@@ -86,10 +89,10 @@ export function createAdminComplaintDetailView(params) {
                     <span>⚡</span> AI Smart Priority Diagnostic Breakdown
                   </div>
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.8rem;">
-                    <div>Keyword Urgency: <strong>+${p.factors.keywordScore} pts</strong></div>
-                    <div>Wait Delay: <strong>+${p.factors.waitScore} pts</strong></div>
-                    <div>Upvotes (${complaint.upvotes || 0}): <strong>+${p.factors.upvoteScore} pts</strong></div>
-                    <div>Subsystem Base: <strong>+${p.factors.categoryBase} pts</strong></div>
+                    <div>Keyword Urgency: <strong>+${factors.keywordScore || 0} pts</strong></div>
+                    <div>Wait Delay: <strong>+${factors.waitScore || 0} pts</strong></div>
+                    <div>Upvotes (${Number(complaint.upvotes) || 0}): <strong>+${factors.upvoteScore || 0} pts</strong></div>
+                    <div>Subsystem Base: <strong>+${factors.categoryBase || 0} pts</strong></div>
                   </div>
                 </div>
 
@@ -97,11 +100,11 @@ export function createAdminComplaintDetailView(params) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; color: var(--color-text-muted);">
                   <div>
                     <span>Location:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.location} (${complaint.specificSpot || 'N/A'})</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.location || 'Campus'} (${complaint.specificSpot || 'N/A'})</strong>
                   </div>
                   <div>
                     <span>Submitted By:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name} (${complaint.submittedBy?.email})</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name || 'Student'} (${complaint.submittedBy?.email || 'student@campus.edu'})</strong>
                   </div>
                 </div>
               </div>

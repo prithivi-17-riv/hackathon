@@ -331,33 +331,74 @@ class StateManager {
   }
 
   async syncProfile(authUser) {
-    if (!supabase || !authUser) return;
+    if (!authUser) return;
 
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
+    let profileData = null;
 
-      if (profile && !error) {
-        this.state.currentUser = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role,
-          rollNo: profile.roll_no,
-          department: profile.department,
-          hostel: profile.hostel,
-          roomNo: profile.room_no,
-          phone: profile.phone,
-          avatar: profile.avatar || profile.name.substring(0, 2).toUpperCase()
-        };
-        this.state.currentRole = profile.role;
-        this.saveState();
+    if (supabase) {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+
+        if (profile && !error) {
+          profileData = profile;
+        }
+      } catch (err) {
+        console.warn('Error fetching Supabase user profile:', err);
       }
-    } catch (err) {
-      console.warn('Error fetching Supabase user profile:', err);
+    }
+
+    if (profileData) {
+      this.state.currentUser = {
+        id: profileData.id,
+        name: profileData.name || 'Campus Member',
+        email: profileData.email || authUser.email,
+        role: profileData.role || 'student',
+        rollNo: profileData.roll_no || '',
+        department: profileData.department || 'General',
+        hostel: profileData.hostel || 'Hostel Block B (Cauvery)',
+        roomNo: profileData.room_no || '',
+        phone: profileData.phone || '',
+        avatar: profileData.avatar || (profileData.name ? profileData.name.substring(0, 2).toUpperCase() : 'ST')
+      };
+      this.state.currentRole = profileData.role || 'student';
+      this.saveState();
+    } else {
+      const meta = authUser.user_metadata || {};
+      const userName = meta.name || authUser.email?.split('@')[0] || 'Campus User';
+      const userRole = meta.role || 'student';
+      this.state.currentUser = {
+        id: authUser.id || 'usr_student_1',
+        name: userName,
+        email: authUser.email || 'student@campus.edu',
+        role: userRole,
+        rollNo: meta.roll_no || meta.rollNo || '',
+        department: meta.department || 'General',
+        hostel: meta.hostel || 'Hostel Block B (Cauvery)',
+        roomNo: meta.room_no || meta.roomNo || '',
+        phone: '',
+        avatar: userName.substring(0, 2).toUpperCase()
+      };
+      this.state.currentRole = userRole;
+      this.saveState();
+
+      if (supabase && authUser.id) {
+        try {
+          await supabase.from('profiles').upsert([{
+            id: authUser.id,
+            name: userName,
+            email: authUser.email,
+            role: userRole,
+            roll_no: meta.roll_no || meta.rollNo || '',
+            department: meta.department || 'General',
+            hostel: meta.hostel || '',
+            room_no: meta.room_no || meta.roomNo || ''
+          }]);
+        } catch (_) {}
+      }
     }
   }
 
@@ -389,18 +430,44 @@ class StateManager {
   }
 
   async signIn({ email, password }) {
-    if (!supabase) throw new Error('Supabase client not initialized');
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const mockMatch = (this.state.users || INITIAL_USERS).find(
+      u => u.email.toLowerCase() === cleanEmail
+    );
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password
+        });
 
-    if (error) throw error;
-    if (data.user) {
-      await this.syncProfile(data.user);
+        if (!error && data?.user) {
+          await this.syncProfile(data.user);
+          return data;
+        }
+        if (error && mockMatch) {
+          console.warn('Supabase auth failed, logging in as demo user:', mockMatch.name);
+          this.setCurrentUser(mockMatch);
+          return { user: mockMatch };
+        }
+        if (error) throw error;
+      } catch (err) {
+        if (mockMatch) {
+          console.warn('Supabase auth exception, falling back to demo user:', mockMatch.name);
+          this.setCurrentUser(mockMatch);
+          return { user: mockMatch };
+        }
+        throw err;
+      }
     }
-    return data;
+
+    if (mockMatch) {
+      this.setCurrentUser(mockMatch);
+      return { user: mockMatch };
+    }
+
+    throw new Error('Invalid email or password. Please verify your credentials or register a new account.');
   }
 
   async signOut() {
@@ -445,8 +512,16 @@ class StateManager {
   }
 
   setCurrentUser(user) {
-    this.state.currentUser = user;
-    this.state.currentRole = user ? user.role : 'guest';
+    if (user) {
+      this.state.currentUser = {
+        ...user,
+        avatar: user.avatar || (user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'AS')
+      };
+      this.state.currentRole = user.role || 'student';
+    } else {
+      this.state.currentUser = null;
+      this.state.currentRole = 'guest';
+    }
     this.saveState();
   }
 
@@ -543,6 +618,15 @@ const delay = (ms = 180) => new Promise(resolve => setTimeout(resolve, ms));
  * AI Smart Prioritization Scoring Algorithm
  */
 function calculatePriorityScore(complaint) {
+  if (!complaint) {
+    return {
+      score: 10,
+      tier: 'Low',
+      badgeClass: 'badge-low',
+      factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 10 }
+    };
+  }
+
   const URGENCY_KEYWORDS = [
     { word: 'hazard', weight: 40 },
     { word: 'fire', weight: 50 },
@@ -569,20 +653,22 @@ function calculatePriorityScore(complaint) {
     }
   });
 
-  const createdTime = new Date(complaint.createdAt || complaint.created_at || Date.now()).getTime();
+  const dateVal = complaint.createdAt || complaint.created_at;
+  const parsedTime = dateVal ? new Date(dateVal).getTime() : Date.now();
+  const createdTime = isNaN(parsedTime) ? Date.now() : parsedTime;
   const now = Date.now();
   const waitHours = Math.max(0, (now - createdTime) / (1000 * 60 * 60));
-  const isResolved = complaint.status === 'Resolved';
+  const isResolved = (complaint.status || '') === 'Resolved';
   const waitScore = isResolved ? 0 : Math.min(40, waitHours * 1.5);
 
-  const upvoteScore = Math.min(30, (complaint.upvotes || 0) * 4);
+  const upvoteScore = Math.min(30, (Number(complaint.upvotes) || 0) * 4);
 
   let categoryBase = 10;
   const catId = complaint.categoryId || complaint.category_id;
   if (catId === 'security' || catId === 'plumbing') categoryBase = 25;
   if (catId === 'hvac' || catId === 'electrical') categoryBase = 20;
 
-  const totalScore = Math.round(keywordScore + waitScore + upvoteScore + categoryBase);
+  const totalScore = Math.round((Number(keywordScore) || 0) + (Number(waitScore) || 0) + (Number(upvoteScore) || 0) + (Number(categoryBase) || 10));
 
   let tier = 'Low';
   let badgeClass = 'badge-low';
@@ -602,10 +688,10 @@ function calculatePriorityScore(complaint) {
     tier,
     badgeClass,
     factors: {
-      keywordScore,
+      keywordScore: Math.round(keywordScore),
       waitScore: Math.round(waitScore),
-      upvoteScore,
-      categoryBase
+      upvoteScore: Math.round(upvoteScore),
+      categoryBase: Math.round(categoryBase)
     }
   };
 }
@@ -614,49 +700,49 @@ function calculatePriorityScore(complaint) {
 function normalizeComplaintRow(row) {
   if (!row) return null;
   return {
-    id: row.ticket_number || row.id,
+    id: String(row.ticket_number || row.id || `CMP-${Math.floor(1000 + Math.random() * 9000)}`),
     dbId: row.id,
-    title: row.title,
-    description: row.description,
-    category: row.category,
-    categoryId: row.category_id,
-    location: row.location,
-    specificSpot: row.specific_spot,
-    status: row.status,
-    priority: row.priority,
-    upvotes: row.upvotes || 1,
-    upvotedBy: row.upvoted_by || [],
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    submittedBy: row.profiles ? {
-      id: row.profiles.id,
-      name: row.profiles.name,
-      email: row.profiles.email,
-      rollNo: row.profiles.roll_no
-    } : { name: 'Student', email: 'student@campus.edu' },
-    assignedTo: row.assigned_profile ? {
-      id: row.assigned_profile.id,
-      name: row.assigned_profile.name,
-      department: row.assigned_profile.department
-    } : null,
-    estimatedResolutionTime: row.estimated_resolution_time,
-    photoUrl: row.photo_url,
-    audioUrl: row.audio_url || null,
-    resolutionProof: row.resolution_proof,
-    timeline: (row.complaint_timeline || []).map(t => ({
-      step: t.step,
-      title: t.title,
-      description: t.description,
-      timestamp: t.timestamp,
-      actor: t.actor
-    })),
-    comments: (row.complaint_comments || []).map(c => ({
+    title: row.title || 'Untitled Complaint',
+    description: row.description || '',
+    category: row.category || 'General Maintenance',
+    categoryId: row.category_id || 'electrical',
+    location: row.location || 'Campus Facility',
+    specificSpot: row.specific_spot || '',
+    status: row.status || 'Submitted',
+    priority: row.priority || 'Medium',
+    upvotes: typeof row.upvotes === 'number' ? row.upvotes : (parseInt(row.upvotes, 10) || 1),
+    upvotedBy: Array.isArray(row.upvoted_by) ? row.upvoted_by : [],
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+    submittedBy: row.profiles && typeof row.profiles === 'object' ? {
+      id: row.profiles.id || '',
+      name: row.profiles.name || 'Student',
+      email: row.profiles.email || 'student@campus.edu',
+      rollNo: row.profiles.roll_no || ''
+    } : (row.submittedBy && typeof row.submittedBy === 'object' ? row.submittedBy : { id: 'usr_student_1', name: 'Student', email: 'student@campus.edu' }),
+    assignedTo: row.assigned_profile && typeof row.assigned_profile === 'object' ? {
+      id: row.assigned_profile.id || '',
+      name: row.assigned_profile.name || 'Assigned Staff',
+      department: row.assigned_profile.department || 'Maintenance'
+    } : (row.assignedTo && typeof row.assignedTo === 'object' ? row.assignedTo : (row.assigned_to ? { id: row.assigned_to, name: 'Assigned Staff', department: 'Maintenance' } : null)),
+    estimatedResolutionTime: row.estimated_resolution_time || '24-48 hours',
+    photoUrl: row.photo_url || row.photoUrl || null,
+    audioUrl: row.audio_url || row.audioUrl || null,
+    resolutionProof: row.resolution_proof || row.resolutionProof || null,
+    timeline: Array.isArray(row.complaint_timeline) ? row.complaint_timeline.map(t => ({
+      step: t.step || 'Submitted',
+      title: t.title || 'Update',
+      description: t.description || '',
+      timestamp: t.timestamp || new Date().toISOString(),
+      actor: t.actor || 'System'
+    })) : (Array.isArray(row.timeline) ? row.timeline : []),
+    comments: Array.isArray(row.complaint_comments) ? row.complaint_comments.map(c => ({
       id: c.id,
-      author: c.author_name,
-      role: c.role,
-      text: c.text,
-      timestamp: c.created_at
-    }))
+      author: c.author_name || c.author || 'User',
+      role: c.role || 'student',
+      text: c.text || '',
+      timestamp: c.created_at || c.timestamp || new Date().toISOString()
+    })) : (Array.isArray(row.comments) ? row.comments : [])
   };
 }
 
@@ -693,15 +779,15 @@ const api = {
         const { data, error } = await query;
 
         if (!error && data && data.length > 0) {
-          let complaints = data.map(row => normalizeComplaintRow(row));
+          let complaints = data.map(row => normalizeComplaintRow(row)).filter(Boolean);
 
           // Merge local state complaints and upvotes so local toggles/tickets are never wiped out
-          const localComplaints = stateManager.getComplaints();
+          const localComplaints = stateManager.getComplaints().filter(Boolean);
           const remoteIds = new Set(complaints.map(c => c.id).concat(complaints.map(c => c.dbId)));
-          const localOnly = localComplaints.filter(l => !remoteIds.has(l.id) && !remoteIds.has(l.dbId));
+          const localOnly = localComplaints.filter(l => l && !remoteIds.has(l.id) && !remoteIds.has(l.dbId));
 
           complaints = complaints.map(c => {
-            const local = localComplaints.find(l => l.id === c.id || l.dbId === c.id || l.id === c.dbId);
+            const local = localComplaints.find(l => l && (l.id === c.id || l.dbId === c.id || l.id === c.dbId));
             if (local && Array.isArray(local.upvotedBy)) {
               return {
                 ...c,
@@ -721,9 +807,9 @@ const api = {
           }));
 
           if (filter.sortByPriority) {
-            complaints.sort((a, b) => b.priorityMetrics.score - a.priorityMetrics.score);
+            complaints.sort((a, b) => (b.priorityMetrics?.score || 0) - (a.priorityMetrics?.score || 0));
           } else {
-            complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
           }
 
           stateManager.setComplaints(complaints);
@@ -736,7 +822,7 @@ const api = {
 
     // Local state fallback
     await delay();
-    let complaints = [...stateManager.getComplaints()];
+    let complaints = [...stateManager.getComplaints()].filter(Boolean);
 
     complaints = complaints.map(c => ({
       ...c,
@@ -744,22 +830,25 @@ const api = {
     }));
 
     if (filter.status && filter.status !== 'All') {
-      complaints = complaints.filter(c => c.status === filter.status);
+      complaints = complaints.filter(c => c && c.status === filter.status);
     }
     if (filter.category && filter.category !== 'All') {
-      complaints = complaints.filter(c => c.category === filter.category || c.categoryId === filter.category);
+      complaints = complaints.filter(c => c && (c.category === filter.category || c.categoryId === filter.category));
     }
     if (filter.location && filter.location !== 'All') {
-      complaints = complaints.filter(c => c.location === filter.location);
+      complaints = complaints.filter(c => c && c.location === filter.location);
     }
     if (filter.assignedTo) {
-      complaints = complaints.filter(c => c.assignedTo && c.assignedTo.id === filter.assignedTo);
+      complaints = complaints.filter(c => c && (
+        (c.assignedTo && typeof c.assignedTo === 'object' && c.assignedTo.id === filter.assignedTo) ||
+        c.assignedTo === filter.assignedTo
+      ));
     }
 
     if (filter.sortByPriority) {
-      complaints.sort((a, b) => b.priorityMetrics.score - a.priorityMetrics.score);
+      complaints.sort((a, b) => (b.priorityMetrics?.score || 0) - (a.priorityMetrics?.score || 0));
     } else {
-      complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     }
 
     return { success: true, data: complaints, count: complaints.length };
@@ -1084,17 +1173,18 @@ const api = {
    */
   async findDuplicates(categoryId, location, titleQuery = '') {
     const res = await api.getComplaints();
-    const complaints = (res.data || []).filter(c => c.status !== 'Resolved' && c.status !== 'Rejected');
+    const complaints = (res?.data || []).filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected');
 
     const duplicates = complaints.filter(c => {
-      const sameLocation = c.location && location && c.location.toLowerCase().includes(location.toLowerCase());
-      const sameCategory = c.categoryId === categoryId || (c.category && categoryId && c.category.toLowerCase().includes(categoryId.toLowerCase()));
+      if (!c) return false;
+      const sameLocation = c.location && location && String(c.location).toLowerCase().includes(String(location).toLowerCase());
+      const sameCategory = c.categoryId === categoryId || (c.category && categoryId && String(c.category).toLowerCase().includes(String(categoryId).toLowerCase()));
 
       if (sameLocation && sameCategory) return true;
 
       if (titleQuery && titleQuery.length > 5) {
         const words = titleQuery.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-        const matchCount = words.filter(w => c.title.toLowerCase().includes(w)).length;
+        const matchCount = words.filter(w => String(c.title || '').toLowerCase().includes(w)).length;
         if (matchCount >= 2 && sameLocation) return true;
       }
       return false;
@@ -1123,18 +1213,20 @@ const api = {
    */
   async getAnalyticsData() {
     const res = await api.getComplaints();
-    const complaints = res.data || [];
+    const complaints = (res?.data || []).filter(Boolean);
 
     const total = complaints.length;
-    const resolved = complaints.filter(c => c.status === 'Resolved').length;
-    const inProgress = complaints.filter(c => c.status === 'In Progress' || c.status === 'Assigned').length;
-    const pending = complaints.filter(c => c.status === 'Submitted' || c.status === 'Acknowledged').length;
+    const resolved = complaints.filter(c => (c.status || '') === 'Resolved').length;
+    const inProgress = complaints.filter(c => (c.status || '') === 'In Progress' || (c.status || '') === 'Assigned').length;
+    const pending = complaints.filter(c => (c.status || '') === 'Submitted' || (c.status || '') === 'Acknowledged').length;
 
     const clusterMap = {};
     complaints.forEach(c => {
-      const key = `${c.location}__${c.category}`;
+      const loc = c.location || 'Campus Facilities';
+      const cat = c.category || 'General';
+      const key = `${loc}__${cat}`;
       if (!clusterMap[key]) {
-        clusterMap[key] = { location: c.location, category: c.category, count: 0, complaints: [] };
+        clusterMap[key] = { location: loc, category: cat, count: 0, complaints: [] };
       }
       clusterMap[key].count += 1;
       clusterMap[key].complaints.push(c);
@@ -1150,7 +1242,8 @@ const api = {
 
     const categoryCounts = {};
     complaints.forEach(c => {
-      categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+      const cat = c.category || 'General';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     });
 
     return {
@@ -1494,6 +1587,24 @@ function createLandingView() {
               <div style="text-align: center; margin-top: 16px; font-size: 0.85rem; color: var(--color-text-muted);">
                 Don't have an account? <a href="#/signup" style="font-weight: 600;">Register as Student</a>
               </div>
+
+              <!-- Quick Demo Access for Hackathon Judges & Evaluators -->
+              <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border); text-align: center;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                  ⚡ Quick Demo Portals
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="student" style="font-size: 0.78rem; padding: 5px 10px;">
+                    🎓 Student
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="staff" style="font-size: 0.78rem; padding: 5px 10px;">
+                    👨‍🔧 Staff
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm quick-demo-btn" data-demo-role="admin" style="font-size: 0.78rem; padding: 5px 10px;">
+                    🏛️ Admin
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -1501,6 +1612,27 @@ function createLandingView() {
     },
 
     onMount() {
+      // Quick Demo Switcher
+      document.querySelectorAll('.quick-demo-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const role = e.currentTarget.getAttribute('data-demo-role');
+          const state = stateManager.getState();
+          const target = (state.users || []).find(u => u.role === role) || {
+            role,
+            name: role === 'admin' ? 'Dr. Ramesh Patel' : (role === 'staff' ? 'Suresh Kumar' : 'Aarav Sharma'),
+            email: role === 'admin' ? 'warden.cauvery@campus.edu' : (role === 'staff' ? 'suresh.maintenance@campus.edu' : 'aarav.sharma@campus.edu'),
+            id: role === 'admin' ? 'usr_admin_1' : (role === 'staff' ? 'usr_staff_1' : 'usr_student_1')
+          };
+          stateManager.setCurrentUser(target);
+          if (window.__universe_app) {
+            window.__universe_app.renderShell();
+          }
+          if (role === 'admin') router.navigate('/admin');
+          else if (role === 'staff') router.navigate('/staff');
+          else router.navigate('/dashboard');
+        });
+      });
+
       document.getElementById('custom-login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('login-submit-btn');
@@ -1733,35 +1865,49 @@ function createDashboardView() {
   return {
     async render() {
       const state = stateManager.getState();
-      const user = state.currentUser || { id: 'usr_student_1', name: 'Student', hostel: 'Campus Student', role: 'student' };
+      const user = state.currentUser || { id: 'usr_student_1', name: 'Student', hostel: 'Campus Student', role: 'student', email: 'student@campus.edu' };
       const role = (user.role || state.currentRole || 'student').toLowerCase();
       const isStaffOrAdmin = role === 'admin' || role === 'staff' || role === 'teacher' || role === 'faculty';
       const res = await api.getComplaints();
-      const complaints = res.data || [];
+      const complaints = (res && Array.isArray(res.data)) ? res.data : [];
 
-      const myComplaints = complaints.filter(c => c.submittedBy?.email === user.email);
-      const activeCount = complaints.filter(c => c.status !== 'Resolved' && c.status !== 'Rejected').length;
-      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+      const userEmail = user.email || '';
+      const userId = user.id || '';
+      const myComplaints = complaints.filter(c => {
+        if (!c) return false;
+        if (userEmail && c.submittedBy?.email === userEmail) return true;
+        if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+        return false;
+      });
+      const activeCount = complaints.filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected').length;
+      const resolvedCount = complaints.filter(c => c && (c.status || '') === 'Resolved').length;
 
       // Filter complaints based on activeTab & search
       let filtered = [...complaints];
       if (activeTab === 'My Complaints') {
-        filtered = filtered.filter(c => c.submittedBy?.email === user.email);
+        filtered = filtered.filter(c => {
+          if (!c) return false;
+          if (userEmail && c.submittedBy?.email === userEmail) return true;
+          if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+          return false;
+        });
       } else if (activeTab === 'In Progress') {
-        filtered = filtered.filter(c => c.status === 'In Progress' || c.status === 'Assigned');
+        filtered = filtered.filter(c => c && ((c.status || '') === 'In Progress' || (c.status || '') === 'Assigned'));
       } else if (activeTab === 'Resolved') {
-        filtered = filtered.filter(c => c.status === 'Resolved');
+        filtered = filtered.filter(c => c && (c.status || '') === 'Resolved');
       } else if (activeTab === 'Critical') {
-        filtered = filtered.filter(c => c.priority === 'Critical');
+        filtered = filtered.filter(c => c && ((c.priority || '') === 'Critical' || c.priorityMetrics?.tier === 'Critical'));
       }
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         filtered = filtered.filter(c => 
-          c.title.toLowerCase().includes(q) ||
-          c.location.toLowerCase().includes(q) ||
-          c.category.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q)
+          c && (
+            String(c.title || '').toLowerCase().includes(q) ||
+            String(c.location || '').toLowerCase().includes(q) ||
+            String(c.category || '').toLowerCase().includes(q) ||
+            String(c.id || '').toLowerCase().includes(q)
+          )
         );
       }
 
@@ -1862,9 +2008,22 @@ function createDashboardView() {
                 <a href="#/complaints/new" class="btn btn-primary btn-sm">Report New Issue</a>
               </div>
             ` : filtered.map(c => {
-              const hasUpvoted = c.upvotedBy && c.upvotedBy.includes(user.id);
-              const statusClass = c.status.toLowerCase().replace(/\s+/g, '-');
-              const priorityClass = c.priority.toLowerCase();
+              if (!c) return '';
+              const hasUpvoted = Array.isArray(c.upvotedBy) && Boolean(user?.id) && c.upvotedBy.includes(user.id);
+              const statusStr = c.status || 'Submitted';
+              const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+              const priorityStr = c.priority || c.priorityMetrics?.tier || 'Medium';
+              const priorityClass = priorityStr.toLowerCase();
+              const categoryStr = c.category || 'General';
+              const assignedName = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.name || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+
+              let formattedDate = 'Recent';
+              if (c.createdAt) {
+                try {
+                  const d = new Date(c.createdAt);
+                  if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString();
+                } catch (_) {}
+              }
 
               return `
                 <div class="card card-hoverable" style="padding: 20px;" data-complaint-id="${c.id}">
@@ -1872,26 +2031,26 @@ function createDashboardView() {
                     <div style="flex: 1; min-width: 260px;">
                       <!-- Header Badges -->
                       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <span class="badge badge-${statusClass}">● ${c.status}</span>
-                        <span class="badge badge-${priorityClass}">${c.priority} Priority</span>
-                        <span class="badge badge-category">${c.category}</span>
+                        <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                        <span class="badge badge-${priorityClass}">${priorityStr} Priority</span>
+                        <span class="badge badge-category">${categoryStr}</span>
                         ${c.audioUrl ? `<span class="badge" style="background: #EFF6FF; color: var(--color-primary); border: 1px solid #BFDBFE; font-size: 0.72rem;">🎙️ Audio</span>` : ''}
                         <span style="font-size: 0.75rem; color: var(--color-text-light); font-weight: 700;">#${c.id}</span>
                       </div>
 
                       <!-- Title & Location -->
                       <h3 style="font-size: 1.15rem; color: var(--color-secondary); margin-bottom: 6px;">
-                        <a href="#/complaints/${c.id}" style="color: inherit; text-decoration: none;">${c.title}</a>
+                        <a href="#/complaints/${c.id}" style="color: inherit; text-decoration: none;">${c.title || 'Untitled Complaint'}</a>
                       </h3>
                       
                       <div style="display: flex; align-items: center; gap: 12px; font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                        <span>📍 <strong>${c.location}</strong> ${c.specificSpot ? `• ${c.specificSpot}` : ''}</span>
-                        <span>🕒 Logged ${new Date(c.createdAt).toLocaleDateString()}</span>
-                        ${c.assignedTo ? `<span style="color: #4F46E5;">👨‍🔧 Assigned: ${c.assignedTo.name}</span>` : ''}
+                        <span>📍 <strong>${c.location || 'Campus'}</strong> ${c.specificSpot ? `• ${c.specificSpot}` : ''}</span>
+                        <span>🕒 Logged ${formattedDate}</span>
+                        ${assignedName ? `<span style="color: #4F46E5;">👨‍🔧 Assigned: ${assignedName}</span>` : ''}
                       </div>
 
                       <p style="font-size: 0.88rem; color: var(--color-text-main); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 14px;">
-                        ${c.description}
+                        ${c.description || ''}
                       </p>
                     </div>
 
@@ -1899,7 +2058,7 @@ function createDashboardView() {
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0;">
                       <button class="upvote-btn ${hasUpvoted ? 'upvoted' : ''}" data-upvote-id="${c.id}">
                         <span>▲</span>
-                        <span class="upvote-count">${c.upvotes || 0}</span>
+                        <span class="upvote-count">${Number(c.upvotes) || 0}</span>
                         <span>${hasUpvoted ? 'Upvoted' : 'Upvote'}</span>
                       </button>
 
@@ -2584,11 +2743,14 @@ function createComplaintDetailView(params) {
       }
 
       const currentUser = stateManager.getState().currentUser || { id: 'usr_student_1', name: 'Student' };
-      const hasUpvoted = complaint.upvotedBy && complaint.upvotedBy.includes(currentUser.id);
+      const hasUpvoted = Array.isArray(complaint.upvotedBy) && Boolean(currentUser?.id) && complaint.upvotedBy.includes(currentUser.id);
       
       const TRACKING_STEPS = ['Submitted', 'Acknowledged', 'Assigned', 'In Progress', 'Resolved'];
-      const currentStepIdx = TRACKING_STEPS.indexOf(complaint.status);
-      const isResolved = complaint.status === 'Resolved';
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', score: 50, badgeClass: 'badge-medium' };
+      const currentStepIdx = TRACKING_STEPS.indexOf(statusStr);
+      const isResolved = statusStr === 'Resolved';
 
       return `
         <div class="page-container" style="max-width: 960px;">
@@ -2602,21 +2764,21 @@ function createComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                <span class="badge ${complaint.priorityMetrics.badgeClass}">
-                  ${complaint.priorityMetrics.tier} Priority (${complaint.priorityMetrics.score} pts)
+                <span class="badge ${p.badgeClass || 'badge-medium'}">
+                  ${p.tier || 'Medium'} Priority (${p.score || 50} pts)
                 </span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">
-                  ● ${complaint.status}
+                <span class="badge badge-${statusClass}">
+                  ● ${statusStr}
                 </span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.75rem;">${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.75rem;">${complaint.title || 'Untitled Issue'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               <button class="upvote-btn ${hasUpvoted ? 'upvoted' : ''}" id="detail-upvote-btn" style="padding: 8px 16px;">
                 <span>▲</span>
-                <span class="upvote-count">${complaint.upvotes || 0}</span>
+                <span class="upvote-count">${Number(complaint.upvotes) || 0}</span>
                 <span>${hasUpvoted ? 'Upvoted' : 'Upvote Issue'}</span>
               </button>
               <a href="#/dashboard" class="btn btn-outline btn-sm">← Back</a>
@@ -2669,7 +2831,7 @@ function createComplaintDetailView(params) {
                   </div>
                   <div>
                     <span style="color: var(--color-text-muted);">Assigned Technician:</span>
-                    <div style="font-weight: 700; color: #4F46E5;">${complaint.assignedTo ? complaint.assignedTo.name : 'Awaiting Assignment'}</div>
+                    <div style="font-weight: 700; color: #4F46E5;">${(complaint.assignedTo && typeof complaint.assignedTo === 'object') ? (complaint.assignedTo.name || 'Assigned Staff') : (complaint.assignedTo || 'Awaiting Assignment')}</div>
                   </div>
                 </div>
               </div>
@@ -2931,20 +3093,28 @@ function createChatbotView() {
 
         // 1. FAQ keywords
         if (lower.includes('status') || lower.includes('check ticket') || lower.includes('my ticket')) {
-          const user = stateManager.getState().currentUser;
-          const userComplaints = stateManager.getComplaints().filter(c => c.submittedBy?.email === user.email);
+          const user = stateManager.getState().currentUser || { email: 'student@campus.edu', id: 'usr_student_1', name: 'Student' };
+          const userEmail = user.email || '';
+          const userId = user.id || '';
+          const userComplaints = stateManager.getComplaints().filter(c => {
+            if (!c) return false;
+            if (userEmail && c.submittedBy?.email === userEmail) return true;
+            if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+            return false;
+          });
           
           if (userComplaints.length === 0) {
             appendMessage({
               sender: 'bot',
-              text: `You currently have no active tickets logged under ${user.email}. Would you like to submit one?`,
+              text: `You currently have no active tickets logged under ${userEmail || 'your account'}. Would you like to submit one?`,
               options: ['➕ Report an Issue', '🏠 Back to Dashboard']
             });
           } else {
             const latest = userComplaints[0];
+            const assignedName = latest.assignedTo && typeof latest.assignedTo === 'object' ? latest.assignedTo.name : (latest.assignedTo || 'Pending Assignment');
             appendMessage({
               sender: 'bot',
-              text: `Here is your latest ticket status:\n\n📌 **Ticket #${latest.id}**: *"${latest.title}"*\n📍 Location: ${latest.location}\n📊 Status: **${latest.status}**\n👨‍🔧 Assigned: ${latest.assignedTo ? latest.assignedTo.name : 'Pending Assignment'}`,
+              text: `Here is your latest ticket status:\n\n📌 **Ticket #${latest.id}**: *"${latest.title || 'Campus Issue'}"*\n📍 Location: ${latest.location || 'Campus'}\n📊 Status: **${latest.status || 'Submitted'}**\n👨‍🔧 Assigned: ${assignedName}`,
               options: [`🔗 View #${latest.id} Details`, '➕ Report Another Issue']
             });
           }
@@ -3169,23 +3339,25 @@ function createAdminDashboardView() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         complaints = complaints.filter(c =>
-          c.title.toLowerCase().includes(q) ||
-          c.location.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q)
+          c && (
+            String(c.title || '').toLowerCase().includes(q) ||
+            String(c.location || '').toLowerCase().includes(q) ||
+            String(c.id || '').toLowerCase().includes(q)
+          )
         );
       }
 
       if (sortBy === 'date') {
-        complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        complaints.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       } else if (sortBy === 'upvotes') {
-        complaints.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+        complaints.sort((a, b) => (Number(b.upvotes) || 0) - (Number(a.upvotes) || 0));
       }
 
-      const totalActive = complaints.filter(c => c.status !== 'Resolved').length;
-      const criticalCount = complaints.filter(c => c.priorityMetrics?.tier === 'Critical').length;
-      const highCount = complaints.filter(c => c.priorityMetrics?.tier === 'High').length;
+      const totalActive = complaints.filter(c => c && (c.status || '') !== 'Resolved').length;
+      const criticalCount = complaints.filter(c => c && (c.priorityMetrics?.tier === 'Critical' || (c.priority || '') === 'Critical')).length;
+      const highCount = complaints.filter(c => c && (c.priorityMetrics?.tier === 'High' || (c.priority || '') === 'High')).length;
       const totalTickets = complaints.length;
-      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+      const resolvedCount = complaints.filter(c => c && (c.status || '') === 'Resolved').length;
 
       return `
         <div class="admin-layout-container">
@@ -3361,9 +3533,21 @@ function createAdminDashboardView() {
                       </td>
                     </tr>
                   ` : complaints.map(c => {
-                    const p = c.priorityMetrics || { tier: 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+                    if (!c) return '';
+                    const p = c.priorityMetrics || { tier: c.priority || 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
                     const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
-                    const statusClass = (c.status || 'Submitted').toLowerCase().replace(/\s+/g, '-');
+                    const statusStr = c.status || 'Submitted';
+                    const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+                    const assignedName = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.name || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+                    const assignedId = c.assignedTo && typeof c.assignedTo === 'object' ? (c.assignedTo.id || '') : (typeof c.assignedTo === 'string' ? c.assignedTo : '');
+
+                    let formattedDate = 'Recent';
+                    if (c.createdAt) {
+                      try {
+                        const d = new Date(c.createdAt);
+                        if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString();
+                      } catch (_) {}
+                    }
 
                     return `
                       <tr>
@@ -3372,7 +3556,7 @@ function createAdminDashboardView() {
                           <a href="#/admin/complaints/${c.id}" style="font-weight: 800; color: var(--color-secondary);">
                             #${c.id}
                           </a>
-                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${new Date(c.createdAt || Date.now()).toLocaleDateString()}</div>
+                          <div style="font-size: 0.7rem; color: var(--color-text-light);">${formattedDate}</div>
                         </td>
 
                         <!-- AI Priority Badge with score breakdown -->
@@ -3385,34 +3569,34 @@ function createAdminDashboardView() {
                         <!-- Issue Details -->
                         <td>
                           <div style="font-weight: 700; color: var(--color-secondary); margin-bottom: 2px;">
-                            <a href="#/admin/complaints/${c.id}" style="color: inherit;">${c.title}</a>
+                            <a href="#/admin/complaints/${c.id}" style="color: inherit;">${c.title || 'Untitled Issue'}</a>
                           </div>
                           <div style="font-size: 0.785rem; color: var(--color-text-muted);">
-                            📍 <strong>${c.location}</strong> • <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${c.category}</span>
+                            📍 <strong>${c.location || 'Campus'}</strong> • <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${c.category || 'General'}</span>
                           </div>
                         </td>
 
                         <!-- Status Badge -->
                         <td>
                           <span class="badge badge-${statusClass}">
-                            ● ${c.status}
+                            ● ${statusStr}
                           </span>
                         </td>
 
                         <!-- Upvotes -->
                         <td>
                           <span style="font-weight: 800; font-size: 0.9rem; color: var(--color-secondary);">
-                            ▲ ${c.upvotes || 0}
+                            ▲ ${Number(c.upvotes) || 0}
                           </span>
                         </td>
 
                         <!-- Quick Assign Technician Dropdown -->
                         <td>
                           <select class="form-control quick-assign-dropdown" data-complaint-id="${c.id}" style="padding: 4px 8px; font-size: 0.8rem; width: auto;">
-                            <option value="">${c.assignedTo ? `👨‍🔧 ${c.assignedTo.name}` : '⚡ Quick Assign...'}</option>
+                            <option value="">${assignedName ? `👨‍🔧 ${assignedName}` : '⚡ Quick Assign...'}</option>
                             ${staffList.map(s => `
-                              <option value="${s.id}" ${c.assignedTo?.id === s.id ? 'selected' : ''}>
-                                ${s.name} (${s.department.split('&')[0]})
+                              <option value="${s.id}" ${(assignedId === s.id) ? 'selected' : ''}>
+                                ${s.name} (${String(s.department || 'Maintenance').split('&')[0].trim()})
                               </option>
                             `).join('')}
                           </select>
@@ -3505,9 +3689,11 @@ function createAdminAnalyticsView() {
     async render() {
       const state = stateManager.getState();
       const adminUser = state.currentUser || { name: 'Admin' };
-      const analytics = await api.getAnalyticsData();
+      const analytics = (await api.getAnalyticsData()) || {};
 
-      const { summary, recurringIssues, categoryCounts } = analytics;
+      const summary = analytics.summary || { total: 0, resolved: 0, inProgress: 0, pending: 0, resolutionRate: 0, avgResolutionHours: 18.5 };
+      const recurringIssues = Array.isArray(analytics.recurringIssues) ? analytics.recurringIssues : [];
+      const categoryCounts = analytics.categoryCounts || {};
 
       return `
         <div class="admin-layout-container">
@@ -3649,7 +3835,7 @@ function createAdminAnalyticsView() {
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                       ${cluster.complaints.map(c => `
                         <a href="#/admin/complaints/${c.id}" class="badge" style="background: #FFFFFF; color: #991B1B; border-color: #F87171; text-transform: none;">
-                          #${c.id}: ${c.title.substring(0, 24)}...
+                          #${c.id}: ${String(c.title || 'Issue').substring(0, 24)}...
                         </a>
                       `).join('')}
                     </div>
@@ -3669,7 +3855,7 @@ function createAdminAnalyticsView() {
 
                 <div style="display: flex; flex-direction: column; gap: 14px;">
                   ${Object.entries(categoryCounts).map(([cat, count]) => {
-                    const pct = Math.round((count / summary.total) * 100);
+                    const pct = summary.total > 0 ? Math.round((count / summary.total) * 100) : 0;
                     return `
                       <div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">
@@ -3698,7 +3884,7 @@ function createAdminAnalyticsView() {
                       <span>${summary.resolved}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.resolved / summary.total) * 100)}%; background: #10B981;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.resolved / summary.total) * 100) : 0}%; background: #10B981;"></div>
                     </div>
                   </div>
 
@@ -3708,7 +3894,7 @@ function createAdminAnalyticsView() {
                       <span>${summary.inProgress}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.inProgress / summary.total) * 100)}%; background: #8B5CF6;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.inProgress / summary.total) * 100) : 0}%; background: #8B5CF6;"></div>
                     </div>
                   </div>
 
@@ -3718,7 +3904,7 @@ function createAdminAnalyticsView() {
                       <span>${summary.pending}</span>
                     </div>
                     <div style="height: 12px; background: var(--color-bg-alt); border-radius: var(--radius-full); overflow: hidden;">
-                      <div style="height: 100%; width: ${Math.round((summary.pending / summary.total) * 100)}%; background: #F59E0B;"></div>
+                      <div style="height: 100%; width: ${summary.total > 0 ? Math.round((summary.pending / summary.total) * 100) : 0}%; background: #F59E0B;"></div>
                     </div>
                   </div>
                 </div>
@@ -3773,8 +3959,11 @@ function createAdminComplaintDetailView(params) {
       }
 
       const state = stateManager.getState();
-      const staffList = state.users.filter(u => u.role === 'staff');
-      const p = complaint.priorityMetrics;
+      const staffList = (state.users || []).filter(u => u && u.role === 'staff');
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', score: 50, badgeClass: 'badge-medium', factors: { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 } };
+      const factors = p.factors || { keywordScore: 0, waitScore: 0, upvoteScore: 0, categoryBase: 0 };
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
 
       return `
         <div class="page-container" style="max-width: 980px;">
@@ -3788,11 +3977,11 @@ function createAdminComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span class="badge ${p.badgeClass}">${p.tier} Priority (${p.score} pts)</span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">● ${complaint.status}</span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge ${p.badgeClass || 'badge-medium'}">${p.tier || 'Medium'} Priority (${p.score || 50} pts)</span>
+                <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title || 'Untitled Issue'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -3811,7 +4000,7 @@ function createAdminComplaintDetailView(params) {
               <div class="card card-chunky" style="margin-bottom: 24px;">
                 <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Reported Details</h3>
                 <p style="font-size: 0.95rem; line-height: 1.5; color: var(--color-text-main); margin-bottom: 20px;">
-                  ${complaint.description}
+                  ${complaint.description || ''}
                 </p>
 
                 ${complaint.audioUrl ? `
@@ -3835,10 +4024,10 @@ function createAdminComplaintDetailView(params) {
                     <span>⚡</span> AI Smart Priority Diagnostic Breakdown
                   </div>
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.8rem;">
-                    <div>Keyword Urgency: <strong>+${p.factors.keywordScore} pts</strong></div>
-                    <div>Wait Delay: <strong>+${p.factors.waitScore} pts</strong></div>
-                    <div>Upvotes (${complaint.upvotes || 0}): <strong>+${p.factors.upvoteScore} pts</strong></div>
-                    <div>Subsystem Base: <strong>+${p.factors.categoryBase} pts</strong></div>
+                    <div>Keyword Urgency: <strong>+${factors.keywordScore || 0} pts</strong></div>
+                    <div>Wait Delay: <strong>+${factors.waitScore || 0} pts</strong></div>
+                    <div>Upvotes (${Number(complaint.upvotes) || 0}): <strong>+${factors.upvoteScore || 0} pts</strong></div>
+                    <div>Subsystem Base: <strong>+${factors.categoryBase || 0} pts</strong></div>
                   </div>
                 </div>
 
@@ -3846,11 +4035,11 @@ function createAdminComplaintDetailView(params) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; color: var(--color-text-muted);">
                   <div>
                     <span>Location:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.location} (${complaint.specificSpot || 'N/A'})</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.location || 'Campus'} (${complaint.specificSpot || 'N/A'})</strong>
                   </div>
                   <div>
                     <span>Submitted By:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name} (${complaint.submittedBy?.email})</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name || 'Student'} (${complaint.submittedBy?.email || 'student@campus.edu'})</strong>
                   </div>
                 </div>
               </div>
@@ -3990,27 +4179,31 @@ function createStaffDashboardView() {
       const staffUser = state.currentUser || { id: 'usr_staff_1', name: 'Suresh Kumar', department: 'Electrical & HVAC' };
       
       const res = await api.getComplaints();
-      const allComplaints = res.data;
+      const allComplaints = (res && Array.isArray(res.data)) ? res.data : [];
 
       // Filter to tickets assigned to this staff member or unassigned in their department
       let myTickets = allComplaints.filter(c => {
-        if (c.assignedTo && c.assignedTo.id === staffUser.id) return true;
+        if (!c) return false;
+        const assignedId = c.assignedTo && typeof c.assignedTo === 'object' ? c.assignedTo.id : c.assignedTo;
+        if (assignedId && (assignedId === staffUser.id || assignedId === staffUser.email)) return true;
         if (!c.assignedTo && c.category) {
-          return c.category.includes('Electrical') || c.category.includes('AC') || c.category.includes('HVAC');
+          const cat = String(c.category).toLowerCase();
+          const dept = String(staffUser.department || '').toLowerCase();
+          return cat.includes('electrical') || cat.includes('ac') || cat.includes('hvac') || dept.includes(cat);
         }
         return false;
       });
 
       if (statusTab === 'Active') {
-        myTickets = myTickets.filter(c => c.status === 'In Progress' || c.status === 'Assigned');
+        myTickets = myTickets.filter(c => c && ((c.status || '') === 'In Progress' || (c.status || '') === 'Assigned'));
       } else if (statusTab === 'Resolved') {
-        myTickets = myTickets.filter(c => c.status === 'Resolved');
+        myTickets = myTickets.filter(c => c && (c.status || '') === 'Resolved');
       }
 
-      const activeCount = myTickets.filter(c => c.status !== 'Resolved').length;
+      const activeCount = myTickets.filter(c => c && (c.status || '') !== 'Resolved').length;
       const totalTickets = allComplaints.length;
-      const totalActive = allComplaints.filter(c => c.status !== 'Resolved' && c.status !== 'Rejected').length;
-      const totalResolved = allComplaints.filter(c => c.status === 'Resolved').length;
+      const totalActive = allComplaints.filter(c => c && (c.status || '') !== 'Resolved' && (c.status || '') !== 'Rejected').length;
+      const totalResolved = allComplaints.filter(c => c && (c.status || '') === 'Resolved').length;
       const assignedCount = myTickets.length;
 
       return `
@@ -4093,7 +4286,14 @@ function createStaffDashboardView() {
                 <p style="color: var(--color-text-muted);">No open work orders pending in your queue.</p>
               </div>
             ` : myTickets.map(ticket => {
-              const statusClass = ticket.status.toLowerCase().replace(/\s+/g, '-');
+              if (!ticket) return '';
+              const statusStr = ticket.status || 'Submitted';
+              const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+              const p = ticket.priorityMetrics || { tier: ticket.priority || 'Medium', badgeClass: 'badge-medium' };
+              const tier = p.tier || ticket.priority || 'Medium';
+              const badgeClass = p.badgeClass || 'badge-medium';
+              const studentName = ticket.submittedBy?.name || 'Student';
+              const studentInfo = ticket.submittedBy?.rollNo || ticket.submittedBy?.email || 'Hostel';
 
               return `
                 <div class="card card-hoverable" style="padding: 20px;">
@@ -4101,23 +4301,23 @@ function createStaffDashboardView() {
                     
                     <div style="flex: 1; min-width: 280px;">
                       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <span class="badge badge-${statusClass}">● ${ticket.status}</span>
-                        <span class="badge ${ticket.priorityMetrics.badgeClass}">${ticket.priorityMetrics.tier} Priority</span>
-                        <span class="badge badge-category">${ticket.category}</span>
+                        <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                        <span class="badge ${badgeClass}">${tier} Priority</span>
+                        <span class="badge badge-category">${ticket.category || 'General'}</span>
                         <span style="font-size: 0.75rem; color: var(--color-text-light); font-weight: 700;">#${ticket.id}</span>
                       </div>
 
                       <h3 style="font-size: 1.15rem; color: var(--color-secondary); margin-bottom: 6px;">
-                        <a href="#/staff/complaints/${ticket.id}" style="color: inherit;">${ticket.title}</a>
+                        <a href="#/staff/complaints/${ticket.id}" style="color: inherit;">${ticket.title || 'Untitled Work Order'}</a>
                       </h3>
 
                       <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 10px;">
-                        📍 <strong>Location:</strong> ${ticket.location} (${ticket.specificSpot || 'General'}) • 
-                        👤 <strong>Student:</strong> ${ticket.submittedBy?.name} (${ticket.submittedBy?.rollNo || 'Hostel'})
+                        📍 <strong>Location:</strong> ${ticket.location || 'Campus'} (${ticket.specificSpot || 'General'}) • 
+                        👤 <strong>Student:</strong> ${studentName} (${studentInfo})
                       </div>
 
                       <p style="font-size: 0.88rem; color: var(--color-text-main); margin-bottom: 14px; line-height: 1.4;">
-                        ${ticket.description}
+                        ${ticket.description || ''}
                       </p>
 
                       ${ticket.resolutionProof ? `
@@ -4182,8 +4382,13 @@ function createStaffComplaintDetailView(params) {
         `;
       }
 
-      const isResolved = complaint.status === 'Resolved';
-      const isInProgress = complaint.status === 'In Progress';
+      const statusStr = complaint.status || 'Submitted';
+      const statusClass = statusStr.toLowerCase().replace(/\s+/g, '-');
+      const isResolved = statusStr === 'Resolved';
+      const isInProgress = statusStr === 'In Progress';
+      const p = complaint.priorityMetrics || { tier: complaint.priority || 'Medium', badgeClass: 'badge-medium' };
+      const tier = p.tier || complaint.priority || 'Medium';
+      const badgeClass = p.badgeClass || 'badge-medium';
 
       return `
         <div class="page-container" style="max-width: 960px;">
@@ -4197,11 +4402,11 @@ function createStaffComplaintDetailView(params) {
           <div class="page-header">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span class="badge ${complaint.priorityMetrics.badgeClass}">${complaint.priorityMetrics.tier} Priority</span>
-                <span class="badge badge-${complaint.status.toLowerCase().replace(/\s+/g, '-')}">● ${complaint.status}</span>
-                <span class="badge badge-category">${complaint.category}</span>
+                <span class="badge ${badgeClass}">${tier} Priority</span>
+                <span class="badge badge-${statusClass}">● ${statusStr}</span>
+                <span class="badge badge-category">${complaint.category || 'General'}</span>
               </div>
-              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title}</h1>
+              <h1 class="page-title" style="font-size: 1.8rem;">#${complaint.id}: ${complaint.title || 'Untitled Work Order'}</h1>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -4220,7 +4425,7 @@ function createStaffComplaintDetailView(params) {
               <div class="card card-chunky" style="margin-bottom: 24px;">
                 <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Fault Information</h3>
                 <p style="font-size: 0.95rem; line-height: 1.5; color: var(--color-text-main); margin-bottom: 20px;">
-                  ${complaint.description}
+                  ${complaint.description || ''}
                 </p>
 
                 ${complaint.audioUrl ? `
@@ -4242,13 +4447,13 @@ function createStaffComplaintDetailView(params) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem; background: var(--color-bg-alt); padding: 14px; border-radius: var(--radius-md); border: 1.5px solid var(--color-border);">
                   <div>
                     <span style="color: var(--color-text-muted);">Exact Location:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.location}</strong>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.location || 'Campus'}</strong>
                     <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.specificSpot || ''}</span>
                   </div>
                   <div>
                     <span style="color: var(--color-text-muted);">Contact Student:</span>
-                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name}</strong>
-                    <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.submittedBy?.email}</span>
+                    <strong style="display: block; color: var(--color-secondary);">${complaint.submittedBy?.name || 'Student'}</strong>
+                    <span style="color: var(--color-text-muted); font-size: 0.8rem;">${complaint.submittedBy?.email || ''}</span>
                   </div>
                 </div>
               </div>

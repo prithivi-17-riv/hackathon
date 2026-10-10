@@ -109,20 +109,28 @@ export function createChatbotView() {
 
         // 1. FAQ keywords
         if (lower.includes('status') || lower.includes('check ticket') || lower.includes('my ticket')) {
-          const user = stateManager.getState().currentUser;
-          const userComplaints = stateManager.getComplaints().filter(c => c.submittedBy?.email === user.email);
+          const user = stateManager.getState().currentUser || { email: 'student@campus.edu', id: 'usr_student_1', name: 'Student' };
+          const userEmail = user.email || '';
+          const userId = user.id || '';
+          const userComplaints = stateManager.getComplaints().filter(c => {
+            if (!c) return false;
+            if (userEmail && c.submittedBy?.email === userEmail) return true;
+            if (userId && (c.submittedBy?.id === userId || c.submittedBy === userId)) return true;
+            return false;
+          });
           
           if (userComplaints.length === 0) {
             appendMessage({
               sender: 'bot',
-              text: `You currently have no active tickets logged under ${user.email}. Would you like to submit one?`,
+              text: `You currently have no active tickets logged under ${userEmail || 'your account'}. Would you like to submit one?`,
               options: ['➕ Report an Issue', '🏠 Back to Dashboard']
             });
           } else {
             const latest = userComplaints[0];
+            const assignedName = latest.assignedTo && typeof latest.assignedTo === 'object' ? latest.assignedTo.name : (latest.assignedTo || 'Pending Assignment');
             appendMessage({
               sender: 'bot',
-              text: `Here is your latest ticket status:\n\n📌 **Ticket #${latest.id}**: *"${latest.title}"*\n📍 Location: ${latest.location}\n📊 Status: **${latest.status}**\n👨‍🔧 Assigned: ${latest.assignedTo ? latest.assignedTo.name : 'Pending Assignment'}`,
+              text: `Here is your latest ticket status:\n\n📌 **Ticket #${latest.id}**: *"${latest.title || 'Campus Issue'}"*\n📍 Location: ${latest.location || 'Campus'}\n📊 Status: **${latest.status || 'Submitted'}**\n👨‍🔧 Assigned: ${assignedName}`,
               options: [`🔗 View #${latest.id} Details`, '➕ Report Another Issue']
             });
           }
